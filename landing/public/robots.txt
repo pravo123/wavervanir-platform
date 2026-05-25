@@ -1,0 +1,4 @@
+# Staging — disallow all crawlers.
+# Production SEO is a separate prompt; revisit once a real custom domain ships.
+User-agent: *
+Disallow: /
