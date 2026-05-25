@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     stripe_api_key: str = Field(default="", alias="STRIPE_API_KEY")
     stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
 
+    # ── data-provider env (all OPTIONAL — providers self-disable when blank) ──
+    fmp_api_key: str = Field(default="", alias="FMP_API_KEY")
+    bullflow_api_key: str = Field(default="", alias="BULLFLOW_API_KEY")
+    bullflow_data_file: str = Field(default="", alias="BULLFLOW_DATA_FILE")
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

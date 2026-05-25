@@ -7,7 +7,9 @@ from fastapi import FastAPI
 from wavervanir_api import __version__
 from wavervanir_api.config import get_settings
 from wavervanir_api.db import get_engine
+from wavervanir_api.routes import broker_snapshot as broker_snapshot_routes
 from wavervanir_api.routes import cbsrm as cbsrm_routes
+from wavervanir_api.routes import data as data_routes
 from wavervanir_api.routes import health as health_routes
 from wavervanir_api.routes import onboard as onboard_routes
 from wavervanir_api.routes import stripe as stripe_routes
@@ -40,5 +42,7 @@ def create_app() -> FastAPI:
     app.include_router(waitlist_routes.router, prefix="/v1", tags=["waitlist"])
     app.include_router(stripe_routes.router, prefix="/stripe", tags=["stripe"])
     app.include_router(onboard_routes.router, tags=["onboard"])
+    app.include_router(data_routes.router, prefix="/v1", tags=["data"])
+    app.include_router(broker_snapshot_routes.router, prefix="/v1", tags=["broker-snapshot"])
 
     return app

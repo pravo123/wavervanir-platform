@@ -41,6 +41,19 @@ See `docs/STRIPE_SETUP.md` for the end-to-end test-mode wiring.
 See `docs/DEPLOY.md` for the planned hosting targets (Render + Cloudflare Pages).
 See `docs/STAGING_VERIFICATION.md` for the post-deploy staging smoke runbook.
 
+## Data providers
+
+The API exposes four data-ingestion modes — `demo`, `fmp`, `bullflow`, and an
+upload-only `broker_snapshot` surface for sanitized portfolio JSON/CSV.
+Direct broker SDKs (Tastytrade, IBKR, Alpaca, Tradier, …) are **forbidden** in
+this repo; broker-derived data may enter only through the sanitized upload
+path. The AST guard test enforces this on every CI run.
+
+* `docs/DATA_PROVIDERS.md` — overview of the four modes and endpoints.
+* `docs/FMP_SETUP.md` — Financial Modeling Prep wiring.
+* `docs/BULLFLOW_SETUP.md` — options-flow wiring (API or local file).
+* `docs/TASTYWORKS_SNAPSHOT_SCHEMA.md` — sanitized broker-snapshot contract.
+
 ## License
 
 Apache-2.0. See `LICENSE`.

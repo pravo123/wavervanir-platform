@@ -38,6 +38,13 @@ FORBIDDEN_PATTERNS = [
     r"\bbroker_router\b",
     r"\border_spec\b",
     r"\bplace_order\b",
+    # Broker SDKs are forbidden in the public surface — sanitized snapshot
+    # files are the ONLY way broker-derived data may enter this service.
+    r"\btastytrade\b",
+    r"\btastyworks\b",
+    r"\bib_insync\b",
+    r"\bibapi\b",
+    r"\balpaca_trade_api\b",
 ]
 
 _FORBIDDEN_RE = re.compile("|".join(FORBIDDEN_PATTERNS), flags=re.IGNORECASE)
