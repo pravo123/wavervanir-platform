@@ -55,6 +55,16 @@ path. The AST guard test enforces this on every CI run.
 * `docs/TASTYWORKS_SNAPSHOT_SCHEMA.md` — sanitized broker-snapshot contract.
 * `docs/DEMO_DASHBOARD.md` — frontend-only demo dashboard rendered on the landing page.
 
+## Contributors
+
+If you're a new collaborator (Ankit or others), start here:
+
+* `docs/ANKIT_START_HERE.md` — front door: what the project is, clone, run, first PR.
+* `docs/CONTRIBUTOR_WORKFLOW.md` — branch naming, commits, PR template, CI gates.
+* `docs/PROJECT_BOUNDARIES.md` — authoritative do/don't list (public/private split, forbidden imports, forbidden copy).
+
+A PR template (`.github/PULL_REQUEST_TEMPLATE.md`) and a task issue template (`.github/ISSUE_TEMPLATE/task.md`) auto-fill on GitHub.
+
 ## License
 
 Apache-2.0. See `LICENSE`.
