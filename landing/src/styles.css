@@ -194,6 +194,181 @@ a:hover { text-decoration: underline; }
   color: var(--fg-muted);
 }
 
+/* ---------- DEMO DASHBOARD ---------- */
+.subhead {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--blue);
+  margin: 40px 0 14px;
+}
+
+/* provider status */
+.provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.provider {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.provider--on { border-color: rgba(77, 186, 253, 0.45); }
+.provider__head { display: flex; justify-content: space-between; align-items: center; }
+.provider__name { font-weight: 600; }
+.provider__pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.provider__pill--on { background: rgba(77, 186, 253, 0.15); color: var(--blue); }
+.provider__pill--off { background: rgba(200, 162, 73, 0.15); color: var(--gold); }
+.provider__kind { font-size: 12px; color: var(--fg-muted); margin-top: 4px; }
+.provider__reason { font-size: 13px; color: var(--fg-muted); margin: 8px 0 0; line-height: 1.45; }
+.provider__requires {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+/* market grid */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+.mkt-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.mkt-card__head { display: flex; justify-content: space-between; align-items: baseline; }
+.mkt-card__sym { font-weight: 700; }
+.mkt-card__label { font-size: 11px; color: var(--fg-muted); }
+.mkt-card__price { font-size: 22px; font-weight: 700; margin: 8px 0 2px; }
+.mkt-card__chg { font-size: 13px; }
+.mkt-card__chg--up { color: #6dd28a; }
+.mkt-card__chg--down { color: #e26a6a; }
+.mkt-card__src { margin-top: 8px; font-size: 11px; color: var(--fg-muted); }
+
+/* flow grid */
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.flow-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.flow-card__head { display: flex; justify-content: space-between; align-items: center; }
+.flow-card__sym { font-weight: 700; }
+.flow-card__bias {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.flow-card__bias--bullish { background: rgba(109, 210, 138, 0.15); color: #6dd28a; }
+.flow-card__bias--bearish { background: rgba(226, 106, 106, 0.15); color: #e26a6a; }
+.flow-card__bias--balanced { background: rgba(155, 160, 166, 0.15); color: var(--fg-muted); }
+.flow-card__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--fg-muted);
+  margin-top: 6px;
+}
+.flow-card__row span:last-child { color: var(--fg); }
+.flow-card__note { font-size: 12px; color: var(--fg-muted); margin: 10px 0 0; }
+.flow-card__src { margin-top: 8px; font-size: 11px; color: var(--fg-muted); }
+
+/* risk preview */
+.risk-preview {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.risk-preview__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.risk-preview__label { font-size: 11px; color: var(--blue); text-transform: uppercase; letter-spacing: 0.15em; }
+.risk-preview__alias { font-weight: 700; margin-top: 2px; }
+.risk-preview__warn {
+  border: 1px solid rgba(200, 162, 73, 0.35);
+  color: var(--gold);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 420px;
+}
+.risk-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.risk-stat {
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.risk-stat__label { font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.12em; }
+.risk-stat__value { font-weight: 700; font-size: 18px; margin-top: 4px; }
+
+.risk-breakdown {
+  margin-top: 24px;
+  /* Long OCC option symbols can overrun narrow viewports; allow the table to
+     scroll horizontally inside its container rather than blowing out the page. */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.risk-breakdown__title { font-size: 13px; color: var(--blue); text-transform: uppercase; letter-spacing: 0.12em; margin: 0 0 10px; }
+.risk-table {
+  width: 100%;
+  min-width: 360px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.risk-table th, .risk-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.risk-table th { color: var(--fg-muted); font-weight: 500; }
+
+/* demo report */
+.demo-report__cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.demo-report__hint { color: var(--fg-muted); font-size: 12px; margin: 0; }
+.demo-report__body {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 16px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: var(--fg);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
 /* ---------- FOOTER ---------- */
 .footer {
   padding: 28px 24px 64px;
