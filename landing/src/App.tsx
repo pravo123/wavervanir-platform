@@ -7,6 +7,7 @@ import MarketSnapshotGrid from "./components/MarketSnapshotGrid";
 import RiskIntelligencePreview from "./components/RiskIntelligencePreview";
 import PortfolioRiskPreview from "./components/PortfolioRiskPreview";
 import DemoReportPreview from "./components/DemoReportPreview";
+import BrokerSnapshotDropzone from "./components/BrokerSnapshotDropzone";
 import { DEMO_DATA_DISCLAIMER } from "./data/demoRisk";
 
 export default function App() {
@@ -33,6 +34,9 @@ export default function App() {
 
           <h3 className="subhead">Portfolio risk summary (sanitized example)</h3>
           <PortfolioRiskPreview />
+
+          <h3 className="subhead">Broker snapshot analysis</h3>
+          <BrokerSnapshotDropzone />
 
           <h3 className="subhead">Report</h3>
           <DemoReportPreview />

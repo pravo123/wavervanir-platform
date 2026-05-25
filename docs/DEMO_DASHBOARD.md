@@ -103,10 +103,60 @@ VITE_WAVERVANIR_API_URL=http://127.0.0.1:8000
 * The fixture fallback is intentional — the landing page must remain useful
   even when the API is down, missing, or rate-limited.
 
+## Live broker-snapshot upload mode (shipped)
+
+The dashboard's "Broker snapshot analysis" section is a paste/drop widget
+(`landing/src/components/BrokerSnapshotDropzone.tsx`) that:
+
+1. Accepts a **sanitized** broker-snapshot JSON (per
+   `docs/TASTYWORKS_SNAPSHOT_SCHEMA.md`) into a textarea.
+2. POSTs it to `${VITE_WAVERVANIR_API_URL}/v1/data/broker-snapshot/risk-summary`
+   when the env var is set.
+3. Renders the returned `PortfolioRiskSummary` inline (stat tiles + asset-class
+   breakdown table).
+
+### Hard guarantees
+
+* **No broker SDKs.** Zero `tastytrade` / `tastyworks` / `ib_insync` / `ibapi` /
+  `alpaca_trade_api` imports anywhere in the landing surface (enforced by the
+  AST guard test that already covers the API surface).
+* **No credentials.** The widget does not ask for an account number, OAuth
+  token, refresh token, or anything secret. The platform's server-side
+  validator rejects payloads containing Stripe / JWT / account-number shapes —
+  the widget surfaces the rejection inline with the `scrub_violations` list so
+  the operator can scrub upstream and retry.
+* **No Authorization header in this slice.** A future slice may add a public
+  proxy or token flow. Today the endpoint accepts unauthenticated POSTs
+  (rate-limited by the same in-process limiter as the rest of `/v1/*`).
+* **`credentials: "omit"`.** No cookies traverse the boundary.
+
+### Gating
+
+| Env state | UI |
+|---|---|
+| `VITE_WAVERVANIR_API_URL` blank | "Set `VITE_WAVERVANIR_API_URL` to enable live snapshot analysis." Analyze button stays disabled. |
+| Env set + 2xx | Summary renders inline (asset-class table + 9 stat tiles). |
+| Env set + 422 (sanitization fail) | "Snapshot rejected." card with the literal `detail.scrub_violations` list. |
+| Env set + 4xx/5xx (other) | "Snapshot error." card with `detail.reason`. |
+| Env set + network/CORS failure | "Snapshot API unavailable." card. |
+| Textarea contains invalid JSON | "JSON error." inline, no fetch is issued. |
+
+The widget renders identically without a backend (the rest of the demo
+dashboard above it stays fixture-backed regardless), so the landing page
+remains useful in every configuration.
+
+### Sample payload
+
+The "Load sample" button drops in a literal mirror of
+`api/tests/fixtures/sample_broker_snapshot.json` — 5 sanitized positions
+(equity, equity, ETF short, option, crypto) totalling \$52 334 gross. The
+sample is intentionally embedded in `landing/src/api/brokerSnapshot.ts` so
+the widget has zero external data dependency.
+
 ## Future slices (planned)
 
 * Wire `MarketSnapshotGrid` to the demo provider on the hosted API so the
   numbers move deterministically per symbol but still without any paid
   data dependency.
-* Add a small "upload sanitized broker JSON" widget that POSTs to
-  `/v1/data/broker-snapshot/risk-summary`. Strictly opt-in.
+* Add a public proxy or token flow for the snapshot endpoint when the API
+  starts gating uploads behind auth.
