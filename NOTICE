@@ -1,0 +1,10 @@
+WaverVanir Platform
+Copyright 2026 WaverVanir International LLC
+
+This product includes software developed by WaverVanir International LLC.
+
+Depends on the public CBSRM package (https://github.com/pravo123/cbsrm),
+also Apache-2.0 licensed.
+
+This product does NOT include, and must never include, any code from the
+private VolanX trading-strategy or execution-risk codebase.

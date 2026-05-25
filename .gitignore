@@ -1,0 +1,41 @@
+# --- python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- node ---
+node_modules/
+.parcel-cache/
+.vite/
+dist/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# --- secrets / local state ---
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db
+api/wavervanir_api.sqlite
+api/local-*.json
+
+# --- editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp

@@ -1,0 +1,208 @@
+:root {
+  --bg: #000000;
+  --bg-elev: #0b0b0d;
+  --fg: #e6e6e6;
+  --fg-muted: #9ba0a6;
+  --gold: #c8a249;
+  --blue: #4dbafd;
+  --accent: linear-gradient(135deg, #c8a249 0%, #4dbafd 100%);
+  --border: #1f1f24;
+  --radius: 14px;
+  --font: -apple-system, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 1080px; margin: 0 auto; padding: 24px; }
+
+/* ---------- NAV ---------- */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.nav__brand { display: flex; align-items: center; gap: 12px; }
+.nav__logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 8px;
+}
+.nav__name {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 18px;
+  color: var(--gold);
+}
+.nav__tagline {
+  font-size: 11px;
+  color: var(--blue);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+.nav__links a {
+  color: var(--fg-muted);
+  margin-left: 24px;
+  font-size: 14px;
+}
+.nav__links a:hover { color: var(--fg); }
+
+/* ---------- HERO ---------- */
+.hero {
+  background: radial-gradient(ellipse at top, #0a0d18 0%, #000 60%);
+  padding: 72px 24px 96px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.hero__logo {
+  width: 220px;
+  max-width: 60vw;
+  height: auto;
+  display: block;
+  margin: 0 auto 28px;
+  background: #000;
+  border-radius: 20px;
+}
+.hero__h1 {
+  font-size: clamp(28px, 4.5vw, 48px);
+  line-height: 1.1;
+  margin: 0 0 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.hero__h1 span { color: var(--gold); }
+.hero__sub {
+  color: var(--fg-muted);
+  font-size: clamp(15px, 1.8vw, 18px);
+  max-width: 720px;
+  margin: 0 auto 32px;
+  line-height: 1.55;
+}
+.hero__cta {
+  display: inline-flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.btn {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--bg-elev);
+  color: var(--fg);
+}
+.btn--primary {
+  background: var(--accent);
+  color: #000;
+  border-color: transparent;
+}
+.btn--ghost {
+  background: transparent;
+}
+
+/* ---------- SECTIONS ---------- */
+.section {
+  padding: 72px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.section__title {
+  font-size: 28px;
+  margin: 0 0 12px;
+}
+.section__lead {
+  color: var(--fg-muted);
+  margin: 0 0 32px;
+  max-width: 720px;
+}
+
+/* ---------- PRICING ---------- */
+.pricing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+.tier {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+.tier__name {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--blue);
+}
+.tier__price {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 10px 0;
+}
+.tier__price small { color: var(--fg-muted); font-size: 14px; font-weight: 400; }
+.tier ul { margin: 0; padding-left: 18px; color: var(--fg-muted); font-size: 14px; line-height: 1.6; }
+.tier--featured {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(200,162,73,0.25);
+}
+
+/* ---------- WAITLIST ---------- */
+.waitlist {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.waitlist__row { display: flex; gap: 8px; flex-wrap: wrap; }
+.waitlist input, .waitlist select {
+  background: #000;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.waitlist__status {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--fg-muted);
+}
+
+/* ---------- FOOTER ---------- */
+.footer {
+  padding: 28px 24px 64px;
+  color: var(--fg-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .nav__links { display: none; }
+  .nav__tagline { display: none; }
+}

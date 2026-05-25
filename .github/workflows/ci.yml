@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install api (with dev extras)
+        working-directory: api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run pytest
+        working-directory: api
+        run: pytest -q
+
+      - name: pip-audit (informational)
+        working-directory: api
+        continue-on-error: true
+        run: |
+          pip install pip-audit
+          pip-audit || true
+
+      - name: bandit (informational)
+        working-directory: api
+        continue-on-error: true
+        run: |
+          pip install bandit
+          bandit -r src/ -q || true
+
+  landing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install landing deps
+        working-directory: landing
+        run: npm ci || npm install
+      - name: Build landing
+        working-directory: landing
+        run: npm run build
