@@ -23,16 +23,25 @@ class ApiKey(SQLModel, table=True):
 
     We never store the raw token. Only its hash (HMAC-SHA256 with the server
     pepper) is persisted.
+
+    ``plan`` is the canonical billing/quota dimension (see ``plans.py``).
+    ``tier`` is retained for backwards compatibility with earlier rows / tests
+    and mirrors a coarse paid/free classification.
     """
 
     __tablename__ = "api_keys"
 
     id: Optional[int] = Field(default=None, primary_key=True)
     key_hash: str = Field(index=True, unique=True)
-    tier: str = Field(default="free")  # "free" | "paid"
+    tier: str = Field(default="free")  # "free" | "paid" — legacy coarse axis
+    plan: str = Field(default="free", index=True)  # "free"|"researcher"|"pro"|"institutional"|"regulator"
     status: str = Field(default="active")  # "active" | "revoked"
     stripe_customer_id: Optional[str] = Field(default=None, index=True)
+    stripe_subscription_id: Optional[str] = Field(default=None, index=True)
+    custom_daily_cap: Optional[int] = Field(default=None)  # manual override for institutional / regulator
     created_at: datetime = Field(default_factory=_utcnow)
+    disclosed_at: Optional[datetime] = Field(default=None)  # set when raw key is shown via /onboard
+    grace_until: Optional[datetime] = Field(default=None)  # set on invoice.payment_failed
     revoked_at: Optional[datetime] = Field(default=None)
 
 
@@ -49,6 +58,28 @@ class AuditLog(SQLModel, table=True):
     status_code: int = Field(default=0)
     latency_ms: int = Field(default=0)
     ts: datetime = Field(default_factory=_utcnow, index=True)
+
+
+class OnboardSession(SQLModel, table=True):
+    """Maps Stripe checkout session id → freshly-minted raw API key.
+
+    The raw token is stored here transiently so it can be retrieved exactly
+    once via ``GET /onboard?session_id=…``. On disclosure the row's
+    ``disclosed_at`` is set and subsequent fetches are refused (410 Gone).
+
+    This is the ONLY place the raw token ever lives at rest — and only
+    until the customer's first onboard hit.
+    """
+
+    __tablename__ = "onboard_sessions"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    stripe_session_id: str = Field(index=True, unique=True)
+    api_key_id: int = Field(index=True)
+    raw_token: Optional[str] = Field(default=None)  # cleared after disclosure
+    plan: str = Field(default="free")
+    created_at: datetime = Field(default_factory=_utcnow)
+    disclosed_at: Optional[datetime] = Field(default=None)
 
 
 class WaitlistEntry(SQLModel, table=True):
