@@ -53,6 +53,7 @@ path. The AST guard test enforces this on every CI run.
 * `docs/FMP_SETUP.md` — Financial Modeling Prep wiring.
 * `docs/BULLFLOW_SETUP.md` — options-flow wiring (API or local file).
 * `docs/TASTYWORKS_SNAPSHOT_SCHEMA.md` — sanitized broker-snapshot contract.
+* `docs/DEMO_DASHBOARD.md` — frontend-only demo dashboard rendered on the landing page.
 
 ## License
 
