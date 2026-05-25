@@ -69,11 +69,42 @@ The visible disclaimer at the top of the section, sourced from
 If you change this string, update the corresponding test in
 `tests/demo-risk-dashboard.test.tsx`.
 
+## Live provider-status mode (shipped)
+
+`DataProviderStatus` now reads the live `/v1/data/providers` endpoint when an
+API origin is configured. The contract is **fail-open**:
+
+1. **`VITE_WAVERVANIR_API_URL` blank or unset** — the tiles render
+   `DEMO_PROVIDERS` immediately, no fetch call is made, no UI noise.
+2. **`VITE_WAVERVANIR_API_URL` set and reachable** — the tiles render
+   `DEMO_PROVIDERS` on first paint, then swap to the live list once the
+   fetch resolves. No spinner is shown (avoids layout shift).
+3. **`VITE_WAVERVANIR_API_URL` set but fetch fails** (network error, 4xx/5xx,
+   malformed payload) — the tiles stay on `DEMO_PROVIDERS` and a small italic
+   "Fixture fallback active." note appears below the grid.
+
+```dotenv
+# landing/.env (gitignored)
+VITE_WAVERVANIR_API_URL=http://127.0.0.1:8000
+```
+
+### What is and is not sent
+
+* `GET ${VITE_WAVERVANIR_API_URL}/v1/data/providers` only.
+* `Accept: application/json` and `credentials: omit`.
+* **No `Authorization` header.** This endpoint is a discovery surface; if
+  your deployed API gates it behind a key, the tiles will fail-over to
+  fixtures until a future slice adds a public proxy or a token flow.
+
+### Boundary reminders
+
+* `VITE_*` values bake into the browser bundle and are PUBLIC. Never put
+  Stripe / FMP / Bullflow / Tastytrade keys in any `VITE_*` var.
+* The fixture fallback is intentional — the landing page must remain useful
+  even when the API is down, missing, or rate-limited.
+
 ## Future slices (planned)
 
-* Wire `DataProviderStatus` to the live `GET /v1/data/providers` endpoint
-  (with a single env var: `VITE_WAVERVANIR_API_URL`). Falls back to the
-  fixture if the env var is blank.
 * Wire `MarketSnapshotGrid` to the demo provider on the hosted API so the
   numbers move deterministically per symbol but still without any paid
   data dependency.
