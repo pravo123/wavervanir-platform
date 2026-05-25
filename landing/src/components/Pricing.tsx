@@ -1,4 +1,7 @@
+import PricingCta from "./PricingCta";
+
 type Tier = {
+  kind: "researcher" | "pro" | "institutional" | "regulator";
   name: string;
   price: string;
   suffix?: string;
@@ -8,29 +11,32 @@ type Tier = {
 
 const TIERS: Tier[] = [
   {
+    kind: "researcher",
     name: "Researcher",
-    price: "$0",
+    price: "$49",
     suffix: "/mo",
     features: [
-      "Public CBSRM library",
-      "100 hosted-API calls / day",
+      "5,000 hosted-API calls / day",
       "Macro-composite endpoint",
+      "Public CBSRM library",
       "Community support",
     ],
   },
   {
+    kind: "pro",
     name: "Pro",
     price: "$499",
     suffix: "/mo",
     features: [
-      "5,000 hosted-API calls / day",
+      "15,000 hosted-API calls / day",
       "All CBSRM endpoints (roadmap)",
       "Audit-chain access",
-      "Email support",
+      "Email support, SLA-lite",
     ],
     featured: true,
   },
   {
+    kind: "institutional",
     name: "Institutional",
     price: "From $4,999",
     suffix: "/mo",
@@ -42,6 +48,7 @@ const TIERS: Tier[] = [
     ],
   },
   {
+    kind: "regulator",
     name: "Regulator / Central Bank",
     price: "Bespoke",
     features: [
@@ -68,6 +75,9 @@ export default function Pricing() {
               <li key={f}>{f}</li>
             ))}
           </ul>
+          <div style={{ marginTop: 18 }}>
+            <PricingCta kind={t.kind} />
+          </div>
         </div>
       ))}
     </div>

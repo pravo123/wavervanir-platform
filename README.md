@@ -28,6 +28,18 @@ becomes reachable.
 
 MVP scaffold — not yet deployed. No production secrets in repo. Stripe wired in test mode only.
 
+## Pricing tiers (test mode)
+
+| plan | price (test) | daily calls | self-serve |
+| --- | --- | --- | --- |
+| Researcher | $49/mo | 5,000 | Stripe Payment Link |
+| Pro | $499/mo | 15,000 | Stripe Payment Link |
+| Institutional | from $4,999/mo | 50,000+ | sales-assisted |
+| Regulator / Central Bank | bespoke | configurable | sales-assisted |
+
+See `docs/STRIPE_SETUP.md` for the end-to-end test-mode wiring.
+See `docs/DEPLOY.md` for the planned hosting targets (Render + Cloudflare Pages).
+
 ## License
 
 Apache-2.0. See `LICENSE`.
