@@ -9,6 +9,11 @@ GET  /health
 GET  /v1/cbsrm/macro-composite/windows
 POST /v1/cbsrm/macro-composite          {"window_id": "2008Q4"|"2020Q1"|"2023Q1"}
 POST /v1/waitlist                       {"email": "...", "tier_interest": "researcher|pro|institutional"}
+GET  /v1/data/providers
+GET  /v1/data/snapshot/{symbol}?provider=demo|fmp|bullflow&kind=market|flow
+POST /v1/data/broker-snapshot/validate
+POST /v1/data/broker-snapshot/risk-summary
+GET  /onboard?session_id=...
 POST /stripe/webhook                    (Stripe-signed)
 ```
 
@@ -38,6 +43,24 @@ All config via environment variables (see `.env.example`). No live keys ever com
 | `STRIPE_API_KEY` | unused in MVP | `sk_test_...` |
 | `WAVERVANIR_RATE_LIMIT_FREE` | `100` | calls/day for free tier |
 | `WAVERVANIR_RATE_LIMIT_PAID` | `5000` | calls/day for paid tier |
+| `FMP_API_KEY` | unset | Enables the FMP quote provider |
+| `BULLFLOW_API_KEY` | unset | Enables Bullflow API ingestion when available |
+| `BULLFLOW_DATA_FILE` | unset | Enables Bullflow ingestion from local JSON/CSV |
+
+## Data providers
+
+The public data layer is provider-ready, not data-dependent:
+
+| Provider | Status without credentials | Notes |
+| --- | --- | --- |
+| `demo` | enabled | Deterministic demo snapshots for local/product demos |
+| `fmp` | disabled | Enables when `FMP_API_KEY` is set |
+| `bullflow` | disabled | Enables when `BULLFLOW_API_KEY` or `BULLFLOW_DATA_FILE` is set |
+| `broker_snapshot` | enabled | Upload-only sanitized JSON; no broker SDK imports |
+
+Broker-derived data must enter only through sanitized snapshots. Direct
+Tastytrade/Tastyworks, IBKR, Alpaca, or other broker SDK imports are forbidden
+in this repo and enforced by tests.
 
 ## Boundary
 

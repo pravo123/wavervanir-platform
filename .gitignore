@@ -39,3 +39,6 @@ api/local-*.json
 .DS_Store
 Thumbs.db
 *.swp
+
+# --- local handoff artifacts ---
+_handoff/

@@ -65,6 +65,25 @@ If you're a new collaborator (Ankit or others), start here:
 
 A PR template (`.github/PULL_REQUEST_TEMPLATE.md`) and a task issue template (`.github/ISSUE_TEMPLATE/task.md`) auto-fill on GitHub.
 
+## Ankit handoff package
+
+If Ankit is not available for direct GitHub collaboration yet, build an async
+handoff zip instead:
+
+```powershell
+tools\build_handoff.ps1
+```
+
+or, from a Unix shell:
+
+```bash
+tools/build_handoff.sh
+```
+
+The artifact is written to `_handoff/wavervanir-platform-handoff.zip`.
+Start with `docs/ANKIT_HANDOFF.md` and `docs/HANDOFF_CHECKLIST.md` before
+sending it.
+
 ## License
 
 Apache-2.0. See `LICENSE`.
