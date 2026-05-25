@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "snapshot_ts": "2026-05-24T18:00:00Z",
+  "account_alias": "paper-main",
+  "base_currency": "USD",
+  "positions": [
+    {
+      "symbol": "AAPL",
+      "asset_class": "equity",
+      "quantity": 100,
+      "mark_price": 195.50,
+      "market_value": 19550.0,
+      "unrealized_pnl": 312.5
+    },
+    {
+      "symbol": "MSFT",
+      "asset_class": "equity",
+      "quantity": 40,
+      "mark_price": 412.10,
+      "market_value": 16484.0,
+      "unrealized_pnl": -84.0
+    },
+    {
+      "symbol": "SPY",
+      "asset_class": "etf",
+      "quantity": -20,
+      "mark_price": 510.0,
+      "market_value": -10200.0,
+      "unrealized_pnl": 45.0
+    },
+    {
+      "symbol": "NVDA  240621C00800000",
+      "asset_class": "option",
+      "quantity": 2,
+      "mark_price": 13.5,
+      "market_value": 2700.0,
+      "unrealized_pnl": 120.0
+    },
+    {
+      "symbol": "BTCUSD",
+      "asset_class": "crypto",
+      "quantity": 0.05,
+      "mark_price": 68000.0,
+      "market_value": 3400.0,
+      "unrealized_pnl": -50.0
+    }
+  ]
+}
