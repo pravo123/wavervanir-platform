@@ -43,33 +43,78 @@ Cloudflare wins on **commercial-use clarity + unlimited bandwidth at $0**.
 
 ## Render — manual setup steps (operator-driven)
 
-1. https://dashboard.render.com → New → **Web Service** → connect `pravo123/wavervanir-platform`.
-2. Build command: `pip install -e api/`
-3. Start command: `uvicorn wavervanir_api.app:create_app --factory --host 0.0.0.0 --port $PORT`
-4. Plan: **Hobby ($7/mo)**.
-5. Region: closest to expected first users.
-6. Env vars (paste from local `api/.env`, **TEST MODE ONLY** for first deploy):
-   - `WAVERVANIR_ENV=staging`
-   - `WAVERVANIR_API_KEY_PEPPER=<rotate from local>`
-   - `STRIPE_API_KEY=sk_test_…`
-   - `STRIPE_WEBHOOK_SECRET=whsec_…` (use the prod-endpoint secret from Stripe dashboard)
-   - `WAVERVANIR_DB_URL=` … set after Postgres step
-7. Add **Render Postgres** → copy the internal connection URL into `WAVERVANIR_DB_URL`.
-8. Save & deploy.
+| Field | Value |
+| --- | --- |
+| Service type | Web Service |
+| Source | `pravo123/wavervanir-platform`, branch `main`, auto-deploy ON |
+| Root Directory | `api` |
+| Runtime | Python 3.12 |
+| Build command | `pip install --upgrade pip && pip install -e .` |
+| Start command | `uvicorn wavervanir_api.app:create_app --factory --host 0.0.0.0 --port $PORT` |
+| Health check path | `/health` |
+| Health check expected status | `200` |
+| Instance type | Hobby ($7/mo) — Free OK only for first 10-min smoke (15-min idle → cold) |
+| Disk | none (all state in Postgres) |
+
+### Render env vars (paste under **Environment** in the UI — never commit)
+
+| Key | Value | Source |
+| --- | --- | --- |
+| `WAVERVANIR_ENV` | `staging` | informational |
+| `WAVERVANIR_DB_URL` | internal connection string from Render Postgres | auto-filled when both services share the env group |
+| `WAVERVANIR_API_KEY_PEPPER` | operator generates with `python -c "import secrets; print(secrets.token_urlsafe(48))"` and pastes | rotates entire keyspace if changed — do NOT reuse the local-dev sentinel |
+| `WAVERVANIR_RATE_LIMIT_FREE` | `100` | matches local default |
+| `WAVERVANIR_RATE_LIMIT_PAID` | leave blank | plan-catalog caps apply |
+| `STRIPE_API_KEY` | `sk_test_…` (test-mode restricted key with Webhooks R/W) | Stripe test dashboard |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` (test-mode) | obtained AFTER registering the webhook URL — see `STRIPE_SETUP.md` §9 |
+| `STRIPE_PRICE_RESEARCHER` | leave blank in first deploy | populate once the Product exists |
+| `STRIPE_PRICE_PRO` | leave blank in first deploy | populate once the Product exists |
+
+### Render Postgres provisioning
+
+| Field | Value |
+| --- | --- |
+| Name | `wavervanir-staging-pg` |
+| Plan | Free (90 days) → upgrade to $7 Starter before expiry |
+| Database | `wavervanir_staging` |
+| Connect to Web Service | YES — Render pastes the internal URL into `WAVERVANIR_DB_URL` automatically |
 
 ## Cloudflare Pages — manual setup steps (operator-driven)
 
-1. https://dash.cloudflare.com → Pages → Connect to Git → `pravo123/wavervanir-platform`.
-2. Build settings:
-   - Framework preset: **Vite**
-   - Build command: `cd landing && npm install && npm run build`
-   - Build output directory: `landing/dist`
-3. Env vars (public — these end up in the bundle):
-   - `VITE_STRIPE_LINK_RESEARCHER=https://buy.stripe.com/test_…`
-   - `VITE_STRIPE_LINK_PRO=https://buy.stripe.com/test_…`
-   - `VITE_INSTITUTIONAL_HREF=#waitlist`
-4. Save & deploy.
-5. (Later) Custom domain `risk.wavervanir.com` via Cloudflare DNS.
+| Field | Value |
+| --- | --- |
+| Project name | `wavervanir-platform` |
+| Production branch | `main` |
+| Framework preset | Vite |
+| Project root | repo root |
+| Build command | `cd landing && npm ci && npm run build` |
+| Build output directory | `landing/dist` |
+| Node version | 20 (matches CI) |
+
+### Cloudflare Pages env vars (Settings → Environment variables → Production)
+
+| Key | Value | Note |
+| --- | --- | --- |
+| `VITE_STRIPE_LINK_RESEARCHER` | leave blank for first deploy | CTA falls back safely to `#waitlist` |
+| `VITE_STRIPE_LINK_PRO` | leave blank for first deploy | same fallback |
+| `VITE_INSTITUTIONAL_HREF` | `#waitlist` | matches `.env.example` |
+
+> `VITE_*` env vars are **public** — they are inlined into the JS bundle.
+> Never put `sk_*` / `whsec_*` into a `VITE_*` slot.
+
+### Same-origin proxy via `landing/public/_redirects`
+
+To avoid CORS, the landing's `/v1/*`, `/onboard`, `/stripe/*`, and `/health`
+paths proxy to the Render API. The file is checked in at
+`landing/public/_redirects` and ships in `landing/dist` automatically. Update
+the destination host once a custom domain is wired (deferred).
+
+### Custom domain decision
+
+**Defer** to a later prompt. First staging deploy uses
+`wavervanir-platform.pages.dev` + `wavervanir-api.onrender.com`. Operator-
+driven DNS (`risk-staging.wavervanir.com`, `api-staging.wavervanir.com`)
+lands after the staging surface holds for ≥ 24h.
 
 ## DNS / TLS
 

@@ -134,7 +134,36 @@ STRIPE_PRICE_RESEARCHER=price_test_REPLACE
 STRIPE_PRICE_PRO=price_test_REPLACE
 ```
 
-## 8. Promotion to live mode (deferred)
+## 9. Staging chicken-and-egg order (TEST MODE ONLY)
+
+Staging webhook setup has an unavoidable ordering because the webhook URL
+must exist before Stripe can sign events against it, but the signing secret
+only exists after registering the URL. Follow this exact sequence:
+
+1. **Deploy API** to Render with `STRIPE_WEBHOOK_SECRET` empty (or with a
+   throw-away placeholder). The `/stripe/webhook` route will refuse all
+   events with `503 stripe webhook secret not configured` — that is the
+   desired safe-by-default behavior in this window.
+2. **Record the Render URL** — e.g. `https://wavervanir-api.onrender.com`.
+3. **Register the webhook** in the Stripe **test-mode** dashboard
+   (Developers → Webhooks → Add endpoint):
+   - Endpoint URL: `https://wavervanir-api.onrender.com/stripe/webhook`
+   - Events: `checkout.session.completed`,
+     `customer.subscription.created`,
+     `customer.subscription.updated`,
+     `customer.subscription.deleted`,
+     `invoice.payment_failed`.
+4. **Copy the `whsec_test_…` value** Stripe shows after creating the endpoint.
+5. **Paste it into Render env** as `STRIPE_WEBHOOK_SECRET` and **save**
+   (Render restarts the service).
+6. **Verify** with the smoke recipe in `docs/STAGING_VERIFICATION.md` §8.
+
+If you ever see a `livemode=true` event reach `/stripe/webhook` while a
+test-mode secret is configured: the endpoint will refuse with `403 live-mode
+events are disabled in MVP` — that is the correct refusal. To handle live
+mode, follow the promotion checklist below (deferred prompt).
+
+## 10. Promotion to live mode (deferred)
 
 Out of scope for this slice. Live mode will require, at minimum:
 

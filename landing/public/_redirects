@@ -1,0 +1,13 @@
+# Cloudflare Pages same-origin proxy.
+#
+# These rules forward authenticated API surfaces from the landing host to the
+# Render-hosted wavervanir-api so the browser sees only one origin (no CORS).
+#
+# Update the destination host once a custom domain is wired (e.g.
+# https://api-staging.wavervanir.com). The format is documented at
+# https://developers.cloudflare.com/pages/configuration/redirects/.
+
+/v1/*       https://wavervanir-api.onrender.com/v1/:splat      200
+/onboard    https://wavervanir-api.onrender.com/onboard        200
+/stripe/*   https://wavervanir-api.onrender.com/stripe/:splat  200
+/health     https://wavervanir-api.onrender.com/health         200

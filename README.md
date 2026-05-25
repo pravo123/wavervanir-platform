@@ -39,6 +39,7 @@ MVP scaffold — not yet deployed. No production secrets in repo. Stripe wired i
 
 See `docs/STRIPE_SETUP.md` for the end-to-end test-mode wiring.
 See `docs/DEPLOY.md` for the planned hosting targets (Render + Cloudflare Pages).
+See `docs/STAGING_VERIFICATION.md` for the post-deploy staging smoke runbook.
 
 ## License
 
