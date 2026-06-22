@@ -1,0 +1,704 @@
+<!--
+  WaverVanir CBSRM / AI model-risk governance section
+  Paste-ready Elementor "HTML" widget fragment.
+
+  HARD RULES (verified):
+   - No <html>/<head>/<body>/<!DOCTYPE>.
+   - No external <link>, <script src>, fonts, or CDN of any kind. 100% offline-safe inside WordPress.
+   - Every CSS rule is scoped under .wv-cbsrm so nothing leaks into / clashes with Astra or Elementor.
+   - No global/reset selectors (no bare html, body, *, h1, a, etc.).
+   - Mobile-responsive via clamp()/flex/grid; verified down to 360px.
+   - Self-contained background + colors; renders correctly regardless of the active theme.
+   - Vanilla JS only; listeners attached by id/class within this widget on DOMContentLoaded-safe IIFE.
+
+  PLATFORM LINK NOTE: "Explore the platform" points to https://risk.wavervanir.com
+  which is PENDING DNS at time of writing. Update or remove once the subdomain resolves.
+-->
+<div class="wv-cbsrm">
+  <style>
+    .wv-cbsrm{
+      /* professional finance palette */
+      --wv-ink:#0b1f33;
+      --wv-ink-soft:#33485c;
+      --wv-paper:#f5f7fa;
+      --wv-card:#ffffff;
+      --wv-line:#dce3ec;
+      --wv-navy:#0e2a47;
+      --wv-navy-2:#15395f;
+      --wv-accent:#1f7a8c;
+      --wv-accent-2:#2c9bb0;
+      --wv-gold:#c08a2d;
+      --wv-good:#1d7a52;
+      --wv-warn:#b4791b;
+      --wv-bad:#a93636;
+      --wv-radius:14px;
+      --wv-shadow:0 10px 30px rgba(11,31,51,.10);
+      --wv-shadow-sm:0 4px 14px rgba(11,31,51,.08);
+
+      box-sizing:border-box;
+      width:100%;
+      margin:0;
+      padding:0;
+      color:var(--wv-ink);
+      background:var(--wv-paper);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      font-weight:400;
+      line-height:1.55;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    .wv-cbsrm *{ box-sizing:border-box; }
+
+    .wv-cbsrm .wv-wrap{
+      max-width:1080px;
+      margin:0 auto;
+      padding:clamp(16px,4vw,40px);
+    }
+
+    /* ---------- generic type ---------- */
+    .wv-cbsrm .wv-eyebrow{
+      display:inline-block;
+      font-size:clamp(.72rem,1.6vw,.8rem);
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-weight:600;
+      color:var(--wv-accent);
+      margin:0 0 .6rem;
+    }
+    .wv-cbsrm .wv-h2{
+      font-size:clamp(1.35rem,3.6vw,2rem);
+      font-weight:600;
+      line-height:1.2;
+      margin:0 0 .6rem;
+      color:var(--wv-ink);
+    }
+    .wv-cbsrm .wv-lede{
+      font-size:clamp(1rem,2.2vw,1.12rem);
+      color:var(--wv-ink-soft);
+      margin:0 0 1.4rem;
+      max-width:62ch;
+    }
+    .wv-cbsrm .wv-section{ padding:clamp(28px,6vw,60px) 0; }
+    .wv-cbsrm .wv-section + .wv-section{ border-top:1px solid var(--wv-line); }
+
+    /* ---------- hero ---------- */
+    .wv-cbsrm .wv-hero{
+      background:
+        radial-gradient(1200px 520px at 85% -10%, rgba(44,155,176,.22), transparent 60%),
+        linear-gradient(160deg, var(--wv-navy) 0%, var(--wv-navy-2) 55%, #0b2238 100%);
+      color:#eaf2f8;
+      border-radius:0;
+    }
+    .wv-cbsrm .wv-hero .wv-wrap{ padding-top:clamp(36px,8vw,72px); padding-bottom:clamp(36px,8vw,72px); }
+    .wv-cbsrm .wv-hero .wv-eyebrow{ color:var(--wv-accent-2); }
+    .wv-cbsrm .wv-hero h1{
+      font-size:clamp(1.8rem,5.2vw,3rem);
+      font-weight:600;
+      line-height:1.12;
+      margin:0 0 1rem;
+      letter-spacing:-.01em;
+      color:#ffffff;
+    }
+    .wv-cbsrm .wv-hero p{
+      font-size:clamp(1.02rem,2.6vw,1.25rem);
+      color:#cfe1ee;
+      margin:0 0 1.6rem;
+      max-width:58ch;
+      font-weight:400;
+    }
+    .wv-cbsrm .wv-hero-badges{
+      display:flex; flex-wrap:wrap; gap:.5rem .6rem; margin-top:.4rem;
+    }
+    .wv-cbsrm .wv-chip{
+      display:inline-flex; align-items:center; gap:.4rem;
+      font-size:.82rem; font-weight:500;
+      padding:.4rem .7rem; border-radius:999px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.18);
+      color:#dbe9f3;
+    }
+
+    /* ---------- buttons ---------- */
+    .wv-cbsrm .wv-btn-row{ display:flex; flex-wrap:wrap; gap:.7rem; margin-top:.4rem; }
+    .wv-cbsrm .wv-btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:.5rem;
+      font-size:clamp(.95rem,2vw,1rem); font-weight:600;
+      padding:.8rem 1.3rem; border-radius:10px;
+      text-decoration:none; cursor:pointer;
+      border:1px solid transparent;
+      transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+      line-height:1.1;
+    }
+    .wv-cbsrm .wv-btn:hover{ transform:translateY(-1px); }
+    .wv-cbsrm .wv-btn-primary{
+      background:linear-gradient(135deg,var(--wv-accent),var(--wv-accent-2));
+      color:#ffffff; box-shadow:0 8px 20px rgba(31,122,140,.35);
+    }
+    .wv-cbsrm .wv-btn-ghost{
+      background:transparent; color:#eaf2f8; border-color:rgba(255,255,255,.4);
+    }
+    .wv-cbsrm .wv-btn-ghost:hover{ background:rgba(255,255,255,.08); }
+    .wv-cbsrm .wv-btn-dark{
+      background:var(--wv-navy); color:#fff;
+    }
+    .wv-cbsrm .wv-btn-outline{
+      background:#fff; color:var(--wv-navy); border-color:var(--wv-line);
+    }
+    .wv-cbsrm .wv-btn-outline:hover{ border-color:var(--wv-accent); }
+
+    /* ---------- problem / pillars ---------- */
+    .wv-cbsrm .wv-callout{
+      background:var(--wv-card);
+      border:1px solid var(--wv-line);
+      border-left:4px solid var(--wv-gold);
+      border-radius:12px;
+      padding:clamp(16px,3vw,22px);
+      box-shadow:var(--wv-shadow-sm);
+      margin:0 0 1.6rem;
+    }
+    .wv-cbsrm .wv-callout strong{ color:var(--wv-ink); font-weight:600; }
+    .wv-cbsrm .wv-grid-3{
+      display:grid; gap:1rem;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    }
+    .wv-cbsrm .wv-pillar{
+      background:var(--wv-card);
+      border:1px solid var(--wv-line);
+      border-radius:12px;
+      padding:clamp(16px,3vw,22px);
+      box-shadow:var(--wv-shadow-sm);
+    }
+    .wv-cbsrm .wv-pillar .wv-num{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:30px; height:30px; border-radius:8px;
+      background:rgba(31,122,140,.12); color:var(--wv-accent);
+      font-weight:600; font-size:.95rem; margin-bottom:.6rem;
+    }
+    .wv-cbsrm .wv-pillar h3{ font-size:1.05rem; font-weight:600; margin:0 0 .35rem; color:var(--wv-ink); }
+    .wv-cbsrm .wv-pillar p{ font-size:.95rem; color:var(--wv-ink-soft); margin:0; }
+
+    /* ---------- CBSRM explainer ---------- */
+    .wv-cbsrm .wv-spine{
+      display:flex; flex-wrap:wrap; align-items:center; gap:.5rem;
+      font-size:clamp(.86rem,1.9vw,.98rem); font-weight:500;
+      color:var(--wv-ink-soft);
+      background:var(--wv-card);
+      border:1px dashed var(--wv-line);
+      border-radius:12px;
+      padding:.9rem 1.1rem;
+      margin:0 0 1.6rem;
+    }
+    .wv-cbsrm .wv-spine b{ color:var(--wv-accent); font-weight:600; }
+    .wv-cbsrm .wv-spine .wv-arrow{ color:var(--wv-gold); font-weight:600; }
+
+    .wv-cbsrm .wv-lenses{
+      display:grid; gap:1rem;
+      grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    }
+    .wv-cbsrm .wv-lens{
+      text-align:left;
+      background:var(--wv-card);
+      border:1px solid var(--wv-line);
+      border-radius:12px;
+      padding:clamp(16px,3vw,20px);
+      cursor:pointer;
+      box-shadow:var(--wv-shadow-sm);
+      transition:border-color .15s ease, transform .12s ease, box-shadow .15s ease;
+      font-family:inherit;
+      color:inherit;
+      width:100%;
+    }
+    .wv-cbsrm .wv-lens:hover{ transform:translateY(-2px); box-shadow:var(--wv-shadow); }
+    .wv-cbsrm .wv-lens[aria-expanded="true"]{
+      border-color:var(--wv-accent);
+      box-shadow:0 0 0 2px rgba(31,122,140,.18), var(--wv-shadow);
+    }
+    .wv-cbsrm .wv-lens .wv-lens-top{
+      display:flex; align-items:center; justify-content:space-between; gap:.6rem;
+    }
+    .wv-cbsrm .wv-lens h3{ font-size:1.02rem; font-weight:600; margin:0; color:var(--wv-ink); }
+    .wv-cbsrm .wv-lens .wv-tag{
+      font-size:.72rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+      color:var(--wv-accent);
+    }
+    .wv-cbsrm .wv-lens .wv-toggle{
+      font-size:1.3rem; line-height:1; color:var(--wv-accent); font-weight:600;
+      transition:transform .15s ease;
+    }
+    .wv-cbsrm .wv-lens[aria-expanded="true"] .wv-toggle{ transform:rotate(45deg); }
+    .wv-cbsrm .wv-lens .wv-lens-sub{ font-size:.9rem; color:var(--wv-ink-soft); margin:.4rem 0 0; }
+    .wv-cbsrm .wv-lens .wv-lens-detail{
+      max-height:0; overflow:hidden; opacity:0;
+      transition:max-height .28s ease, opacity .2s ease, margin .2s ease;
+      margin:0;
+    }
+    .wv-cbsrm .wv-lens[aria-expanded="true"] .wv-lens-detail{
+      max-height:340px; opacity:1; margin-top:.8rem;
+    }
+    .wv-cbsrm .wv-lens .wv-lens-detail p{ font-size:.9rem; color:var(--wv-ink-soft); margin:0 0 .5rem; }
+    .wv-cbsrm .wv-methods{ display:flex; flex-wrap:wrap; gap:.4rem; margin:0; padding:0; list-style:none; }
+    .wv-cbsrm .wv-methods li{
+      font-size:.78rem; font-weight:600;
+      padding:.28rem .6rem; border-radius:999px;
+      background:rgba(14,42,71,.06); color:var(--wv-navy);
+      border:1px solid var(--wv-line);
+    }
+
+    /* ---------- self-check ---------- */
+    .wv-cbsrm .wv-quiz{
+      background:var(--wv-card);
+      border:1px solid var(--wv-line);
+      border-radius:14px;
+      padding:clamp(18px,4vw,28px);
+      box-shadow:var(--wv-shadow-sm);
+    }
+    .wv-cbsrm .wv-quiz-note{
+      font-size:.82rem; font-weight:600; color:var(--wv-warn);
+      background:rgba(180,121,27,.10);
+      border:1px solid rgba(180,121,27,.25);
+      border-radius:8px; padding:.5rem .8rem; margin:0 0 1.2rem;
+      display:inline-block;
+    }
+    .wv-cbsrm .wv-q{
+      display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      gap:.6rem 1rem;
+      padding:.85rem 0; border-bottom:1px solid var(--wv-line);
+    }
+    .wv-cbsrm .wv-q:last-of-type{ border-bottom:0; }
+    .wv-cbsrm .wv-q .wv-q-text{ font-size:.96rem; color:var(--wv-ink); flex:1 1 260px; min-width:220px; }
+    .wv-cbsrm .wv-toggle-group{ display:inline-flex; border:1px solid var(--wv-line); border-radius:999px; overflow:hidden; flex:0 0 auto; }
+    .wv-cbsrm .wv-toggle-group button{
+      font-family:inherit; font-size:.85rem; font-weight:600;
+      padding:.4rem .95rem; border:0; cursor:pointer; background:#fff; color:var(--wv-ink-soft);
+      transition:background .12s ease, color .12s ease;
+    }
+    .wv-cbsrm .wv-toggle-group button + button{ border-left:1px solid var(--wv-line); }
+    .wv-cbsrm .wv-toggle-group button.wv-on-yes{ background:var(--wv-good); color:#fff; }
+    .wv-cbsrm .wv-toggle-group button.wv-on-no{ background:var(--wv-bad); color:#fff; }
+
+    .wv-cbsrm .wv-result{
+      margin-top:1.4rem; padding-top:1.2rem; border-top:2px solid var(--wv-line);
+      display:flex; flex-wrap:wrap; align-items:center; gap:1rem 1.4rem;
+    }
+    .wv-cbsrm .wv-score-ring{
+      flex:0 0 auto;
+      width:96px; height:96px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.6rem; font-weight:600; color:var(--wv-ink);
+      background:conic-gradient(var(--wv-accent) 0deg, var(--wv-line) 0deg);
+      position:relative;
+    }
+    .wv-cbsrm .wv-score-ring::after{
+      content:""; position:absolute; inset:9px; border-radius:50%; background:var(--wv-card);
+    }
+    .wv-cbsrm .wv-score-ring span{ position:relative; z-index:1; }
+    .wv-cbsrm .wv-result-text{ flex:1 1 240px; min-width:220px; }
+    .wv-cbsrm .wv-band{
+      display:inline-block; font-size:.78rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+      padding:.28rem .7rem; border-radius:999px; margin-bottom:.45rem;
+    }
+    .wv-cbsrm .wv-band.lo{ background:rgba(169,54,54,.12); color:var(--wv-bad); }
+    .wv-cbsrm .wv-band.mid{ background:rgba(180,121,27,.14); color:var(--wv-warn); }
+    .wv-cbsrm .wv-band.hi{ background:rgba(29,122,82,.12); color:var(--wv-good); }
+    .wv-cbsrm .wv-result-text p{ margin:0; font-size:.95rem; color:var(--wv-ink-soft); }
+
+    /* ---------- offer ladder ---------- */
+    .wv-cbsrm .wv-ladder{
+      display:grid; gap:1rem;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    }
+    .wv-cbsrm .wv-tier{
+      background:var(--wv-card);
+      border:1px solid var(--wv-line);
+      border-radius:12px;
+      padding:clamp(16px,3vw,22px);
+      box-shadow:var(--wv-shadow-sm);
+      display:flex; flex-direction:column;
+    }
+    .wv-cbsrm .wv-tier.feature{
+      border-color:var(--wv-accent);
+      box-shadow:0 0 0 2px rgba(31,122,140,.16), var(--wv-shadow);
+    }
+    .wv-cbsrm .wv-tier .wv-tier-name{ font-size:1rem; font-weight:600; color:var(--wv-ink); margin:0 0 .3rem; }
+    .wv-cbsrm .wv-tier .wv-price{ font-size:clamp(1.2rem,3vw,1.5rem); font-weight:600; color:var(--wv-navy); margin:0 0 .6rem; }
+    .wv-cbsrm .wv-tier .wv-price small{ font-size:.8rem; font-weight:500; color:var(--wv-ink-soft); }
+    .wv-cbsrm .wv-tier p{ font-size:.9rem; color:var(--wv-ink-soft); margin:0; }
+    .wv-cbsrm .wv-tier .wv-tier-flag{
+      align-self:flex-start; font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+      color:var(--wv-accent); background:rgba(31,122,140,.1); padding:.22rem .55rem; border-radius:999px; margin-bottom:.6rem;
+    }
+
+    /* ---------- final CTA ---------- */
+    .wv-cbsrm .wv-cta{
+      background:linear-gradient(160deg, var(--wv-navy) 0%, #0b2238 100%);
+      color:#eaf2f8; border-radius:16px;
+      padding:clamp(24px,5vw,40px);
+      text-align:center;
+    }
+    .wv-cbsrm .wv-cta h2{ font-size:clamp(1.4rem,3.6vw,2rem); font-weight:600; color:#fff; margin:0 0 .6rem; }
+    .wv-cbsrm .wv-cta p{ color:#cfe1ee; max-width:52ch; margin:0 auto 1.4rem; font-size:clamp(1rem,2.2vw,1.1rem); }
+    .wv-cbsrm .wv-cta .wv-btn-row{ justify-content:center; }
+
+    /* ---------- footer ---------- */
+    .wv-cbsrm .wv-disclaimer{
+      font-size:.8rem; color:var(--wv-ink-soft);
+      max-width:80ch; margin:1.6rem auto 0; text-align:center; line-height:1.6;
+    }
+    .wv-cbsrm .wv-disclaimer strong{ color:var(--wv-ink); font-weight:600; }
+
+    /* ---------- small screens ---------- */
+    @media (max-width:480px){
+      .wv-cbsrm .wv-q{ align-items:flex-start; }
+      .wv-cbsrm .wv-btn{ width:100%; }
+      .wv-cbsrm .wv-btn-row{ flex-direction:column; }
+    }
+  </style>
+
+  <!-- (a) HERO -->
+  <section class="wv-hero">
+    <div class="wv-wrap">
+      <span class="wv-eyebrow">AI model-risk governance</span>
+      <h1>Make your AI models defensible under SR 26-2.</h1>
+      <p>We run our own live AI trading system, so model risk is not a slide deck to us, it is a daily operational discipline. We bring that same governance rigor to your models.</p>
+      <div class="wv-btn-row">
+        <a class="wv-btn wv-btn-primary" href="https://wavervanir.com/consultation/">Book a readiness audit</a>
+        <!-- risk.wavervanir.com is PENDING DNS; update or remove this link once it resolves -->
+        <a class="wv-btn wv-btn-ghost" href="https://risk.wavervanir.com">Explore the platform</a>
+      </div>
+      <div class="wv-hero-badges">
+        <span class="wv-chip">SR 26-2 aligned</span>
+        <span class="wv-chip">CBSRM methodology</span>
+        <span class="wv-chip">SHA-256 lineage</span>
+        <span class="wv-chip">Reproducible dossiers</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- (b) WHY NOW / PROBLEM -->
+  <section class="wv-section">
+    <div class="wv-wrap">
+      <span class="wv-eyebrow">Why now</span>
+      <h2 class="wv-h2">SR 26-2 pulls AI and agentic models into model-risk scope.</h2>
+      <div class="wv-callout">
+        <strong>SR 26-2 took effect on 17 April 2026 and supersedes SR 11-7.</strong>
+        The update makes explicit that machine-learning, generative, and agentic systems are models in the
+        supervisory sense, so they fall under the same expectations for validation, documentation, and oversight
+        as any traditional risk model. If you deploy AI in decisions, you now own the model-risk burden.
+      </div>
+      <p class="wv-lede">Sound model risk management still rests on three pillars. Every AI system you field has to answer to all three.</p>
+      <div class="wv-grid-3">
+        <div class="wv-pillar">
+          <span class="wv-num">1</span>
+          <h3>Conceptual soundness</h3>
+          <p>Is the model built on defensible theory and data, with assumptions and limitations written down and challenged?</p>
+        </div>
+        <div class="wv-pillar">
+          <span class="wv-num">2</span>
+          <h3>Ongoing monitoring</h3>
+          <p>Once in production, is performance tracked against benchmarks, with drift, data quality, and override behavior watched continuously?</p>
+        </div>
+        <div class="wv-pillar">
+          <span class="wv-num">3</span>
+          <h3>Outcomes analysis</h3>
+          <p>Do realized results get compared back to what the model predicted, with the findings feeding the next review cycle?</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- (c) CBSRM EXPLAINER -->
+  <section class="wv-section">
+    <div class="wv-wrap">
+      <span class="wv-eyebrow">The methodology</span>
+      <h2 class="wv-h2">CBSRM: four risk lenses on one auditable spine.</h2>
+      <p class="wv-lede">Cross-border systemic risk monitoring frames the same exposure from four angles, so a single shock can be read as stress, concentration, contagion, and regime at once. Select a lens to see the methods behind it.</p>
+
+      <div class="wv-spine">
+        <b>one auditable data spine</b>
+        <span class="wv-arrow">-&gt;</span>
+        <b>four risk lenses</b>
+        <span class="wv-arrow">-&gt;</span>
+        <b>SHA-256 lineage</b>
+        <span class="wv-arrow">-&gt;</span>
+        <b>reproducible crisis dossiers</b>
+      </div>
+
+      <div class="wv-lenses" id="wv-lenses">
+        <button type="button" class="wv-lens" aria-expanded="false">
+          <div class="wv-lens-top">
+            <h3>System stress</h3>
+            <span class="wv-toggle" aria-hidden="true">+</span>
+          </div>
+          <p class="wv-lens-sub">How tense is the financial system right now?</p>
+          <div class="wv-lens-detail">
+            <p>Composite stress indices fuse equity, bond, and money-market signals into a single time series, so a broad tightening shows up before any one market screams.</p>
+            <ul class="wv-methods">
+              <li>CISS</li>
+              <li>OFR-FSI</li>
+            </ul>
+          </div>
+        </button>
+
+        <button type="button" class="wv-lens" aria-expanded="false">
+          <div class="wv-lens-top">
+            <h3>Firm tail-contribution</h3>
+            <span class="wv-toggle" aria-hidden="true">+</span>
+          </div>
+          <p class="wv-lens-sub">Which firms add the most to system-wide tail risk?</p>
+          <div class="wv-lens-detail">
+            <p>Firm-level measures estimate how much each institution would bleed, or drag the system down, when the tail arrives, ranking systemic contribution rather than standalone size.</p>
+            <ul class="wv-methods">
+              <li>SRISK</li>
+              <li>&Delta;CoVaR</li>
+              <li>MES</li>
+            </ul>
+          </div>
+        </button>
+
+        <button type="button" class="wv-lens" aria-expanded="false">
+          <div class="wv-lens-top">
+            <h3>Network contagion</h3>
+            <span class="wv-toggle" aria-hidden="true">+</span>
+          </div>
+          <p class="wv-lens-sub">How far would a default ripple through the network?</p>
+          <div class="wv-lens-detail">
+            <p>Network propagation traces distress along exposure links, scoring how an initial shock cascades to counterparties and back, so hidden second-round losses become visible.</p>
+            <ul class="wv-methods">
+              <li>DebtRank</li>
+            </ul>
+          </div>
+        </button>
+
+        <button type="button" class="wv-lens" aria-expanded="false">
+          <div class="wv-lens-top">
+            <h3>Macro regime</h3>
+            <span class="wv-toggle" aria-hidden="true">+</span>
+          </div>
+          <p class="wv-lens-sub">What state is the macro environment in?</p>
+          <div class="wv-lens-detail">
+            <p>Regime models translate macro and financial conditions into a probability of stress and a discrete state, so positioning and risk limits can flex with the cycle.</p>
+            <ul class="wv-methods">
+              <li>Macro probit</li>
+              <li>4-state composite</li>
+            </ul>
+          </div>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- (d) SR 26-2 READINESS SELF-CHECK -->
+  <section class="wv-section">
+    <div class="wv-wrap">
+      <span class="wv-eyebrow">Self-check</span>
+      <h2 class="wv-h2">SR 26-2 readiness self-check.</h2>
+      <p class="wv-lede">Answer six quick questions to see roughly where your model governance stands. This is a directional prompt, not a verdict.</p>
+
+      <div class="wv-quiz" id="wv-quiz">
+        <span class="wv-quiz-note">Illustrative only &mdash; not a formal assessment.</span>
+
+        <div class="wv-q" data-q>
+          <span class="wv-q-text">Do you keep a current inventory of every AI or ML model in production, including its owner and purpose?</span>
+          <span class="wv-toggle-group" role="group">
+            <button type="button" data-answer="yes">Yes</button>
+            <button type="button" data-answer="no">No</button>
+          </span>
+        </div>
+
+        <div class="wv-q" data-q>
+          <span class="wv-q-text">Is each model independently validated before deployment, separate from the team that built it?</span>
+          <span class="wv-toggle-group" role="group">
+            <button type="button" data-answer="yes">Yes</button>
+            <button type="button" data-answer="no">No</button>
+          </span>
+        </div>
+
+        <div class="wv-q" data-q>
+          <span class="wv-q-text">Do you monitor live models for drift, data-quality breaks, and performance decay on a defined cadence?</span>
+          <span class="wv-toggle-group" role="group">
+            <button type="button" data-answer="yes">Yes</button>
+            <button type="button" data-answer="no">No</button>
+          </span>
+        </div>
+
+        <div class="wv-q" data-q>
+          <span class="wv-q-text">Can you reproduce any past model decision from versioned data, code, and parameters?</span>
+          <span class="wv-toggle-group" role="group">
+            <button type="button" data-answer="yes">Yes</button>
+            <button type="button" data-answer="no">No</button>
+          </span>
+        </div>
+
+        <div class="wv-q" data-q>
+          <span class="wv-q-text">Do generative or agentic systems sit inside your model-risk framework, not outside it?</span>
+          <span class="wv-toggle-group" role="group">
+            <button type="button" data-answer="yes">Yes</button>
+            <button type="button" data-answer="no">No</button>
+          </span>
+        </div>
+
+        <div class="wv-q" data-q>
+          <span class="wv-q-text">Does a named function own model risk, with documented escalation and board-level reporting?</span>
+          <span class="wv-toggle-group" role="group">
+            <button type="button" data-answer="yes">Yes</button>
+            <button type="button" data-answer="no">No</button>
+          </span>
+        </div>
+
+        <div class="wv-result" id="wv-result" hidden>
+          <div class="wv-score-ring" id="wv-ring"><span id="wv-score-num">0%</span></div>
+          <div class="wv-result-text">
+            <span class="wv-band mid" id="wv-band">Answer the questions</span>
+            <p id="wv-band-copy">Toggle each question to see an illustrative readiness score.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- (e) OFFER LADDER -->
+  <section class="wv-section">
+    <div class="wv-wrap">
+      <span class="wv-eyebrow">Engagements</span>
+      <h2 class="wv-h2">AI model risk readiness audit.</h2>
+      <p class="wv-lede">A ladder from a fast scan to standing advisory, so you can start light and deepen as the work warrants.</p>
+      <div class="wv-ladder">
+        <div class="wv-tier">
+          <span class="wv-tier-name">Readiness scan</span>
+          <span class="wv-price">$500&ndash;1,500</span>
+          <p>A focused review of your model inventory and governance gaps against SR 26-2, with a prioritized punch list.</p>
+        </div>
+        <div class="wv-tier feature">
+          <span class="wv-tier-flag">Most chosen</span>
+          <span class="wv-tier-name">Model risk readiness audit</span>
+          <span class="wv-price">$3,500&ndash;7,500</span>
+          <p>A full assessment across the three pillars for your key models, with documented findings and a remediation roadmap.</p>
+        </div>
+        <div class="wv-tier">
+          <span class="wv-tier-name">Governance setup</span>
+          <span class="wv-price">$15,000<small>+</small></span>
+          <p>We stand up the framework: policy, validation workflow, monitoring, and reproducible lineage tailored to your stack.</p>
+        </div>
+        <div class="wv-tier">
+          <span class="wv-tier-name">Governance advisory</span>
+          <span class="wv-price">$5,000<small>/mo</small></span>
+          <p>Ongoing partnership: validation support, monitoring review, and audit-ready documentation as your models evolve.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- (f) DUAL CTA -->
+  <section class="wv-section">
+    <div class="wv-wrap">
+      <div class="wv-cta">
+        <h2>Find out where your AI model risk stands.</h2>
+        <p>Start with a readiness audit, or look under the hood of the platform that runs our own live system.</p>
+        <div class="wv-btn-row">
+          <a class="wv-btn wv-btn-primary" href="https://wavervanir.com/consultation/">Book a readiness audit</a>
+          <!-- risk.wavervanir.com is PENDING DNS; update or remove this link once it resolves -->
+          <a class="wv-btn wv-btn-outline" href="https://risk.wavervanir.com">Explore the platform</a>
+        </div>
+      </div>
+
+      <!-- (g) FOOTER DISCLAIMER -->
+      <p class="wv-disclaimer">
+        <strong>Disclaimer.</strong> WaverVanir International provides advisory model-risk assessment services only.
+        Nothing on this page is investment advice, and no engagement constitutes a regulatory attestation,
+        certification, or guarantee of compliance with SR 26-2 or any other supervisory standard. The readiness
+        self-check is illustrative and educational, not a formal assessment. &copy; WaverVanir International.
+      </p>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      var root = document.currentScript && document.currentScript.closest
+        ? document.currentScript.closest('.wv-cbsrm')
+        : document.querySelector('.wv-cbsrm');
+      if (!root) { return; }
+
+      /* ---- (c) lens cards: accordion toggle ---- */
+      var lenses = root.querySelectorAll('#wv-lenses .wv-lens');
+      lenses.forEach(function (card) {
+        card.addEventListener('click', function () {
+          var open = card.getAttribute('aria-expanded') === 'true';
+          // close others for a clean single-open accordion
+          lenses.forEach(function (other) {
+            if (other !== card) { other.setAttribute('aria-expanded', 'false'); }
+          });
+          card.setAttribute('aria-expanded', open ? 'false' : 'true');
+        });
+      });
+
+      /* ---- (d) readiness self-check ---- */
+      var quiz = root.querySelector('#wv-quiz');
+      if (!quiz) { return; }
+      var rows = quiz.querySelectorAll('[data-q]');
+      var total = rows.length;
+      var answers = {}; // index -> 'yes' | 'no'
+
+      var result = root.querySelector('#wv-result');
+      var ring = root.querySelector('#wv-ring');
+      var scoreNum = root.querySelector('#wv-score-num');
+      var band = root.querySelector('#wv-band');
+      var bandCopy = root.querySelector('#wv-band-copy');
+
+      function accentForPct(pct) {
+        if (pct >= 80) { return getComputedStyle(root).getPropertyValue('--wv-good') || '#1d7a52'; }
+        if (pct >= 50) { return getComputedStyle(root).getPropertyValue('--wv-warn') || '#b4791b'; }
+        return getComputedStyle(root).getPropertyValue('--wv-bad') || '#a93636';
+      }
+
+      function render() {
+        var yes = 0, answered = 0;
+        for (var k in answers) {
+          if (Object.prototype.hasOwnProperty.call(answers, k)) {
+            answered++;
+            if (answers[k] === 'yes') { yes++; }
+          }
+        }
+        if (answered === 0) { return; }
+        if (result.hasAttribute('hidden')) { result.removeAttribute('hidden'); }
+
+        var pct = Math.round((yes / total) * 100);
+        var color = accentForPct(pct).trim();
+        scoreNum.textContent = pct + '%';
+        ring.style.background = 'conic-gradient(' + color + ' ' + (pct * 3.6) + 'deg, var(--wv-line) 0deg)';
+
+        band.classList.remove('lo', 'mid', 'hi');
+        if (pct >= 80) {
+          band.classList.add('hi');
+          band.textContent = 'Strong footing';
+          bandCopy.textContent = 'Your governance looks broadly aligned with SR 26-2. An audit can confirm the evidence and close edge gaps.';
+        } else if (pct >= 50) {
+          band.classList.add('mid');
+          band.textContent = 'Partial coverage';
+          bandCopy.textContent = 'The bones are there, but key pillars are uneven. A readiness audit would prioritize what to firm up first.';
+        } else {
+          band.classList.add('lo');
+          band.textContent = 'Material gaps';
+          bandCopy.textContent = 'Several core controls appear missing. A readiness scan is the fastest way to map the work ahead.';
+        }
+
+        if (answered < total) {
+          bandCopy.textContent += ' (' + answered + ' of ' + total + ' answered.)';
+        }
+      }
+
+      rows.forEach(function (row, i) {
+        var btns = row.querySelectorAll('button[data-answer]');
+        btns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var val = btn.getAttribute('data-answer');
+            answers[i] = val;
+            btns.forEach(function (b) { b.classList.remove('wv-on-yes', 'wv-on-no'); });
+            btn.classList.add(val === 'yes' ? 'wv-on-yes' : 'wv-on-no');
+            render();
+          });
+        });
+      });
+    })();
+  </script>
+</div>

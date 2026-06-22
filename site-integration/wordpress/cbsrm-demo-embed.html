@@ -1,0 +1,43 @@
+<!--
+  CBSRM hosted-demo iframe snippet for WordPress (Elementor HTML widget).
+
+  USE THIS ONLY once risk.wavervanir.com is LIVE and resolving.
+  Until then, keep the narrative on the same-origin Elementor page (cbsrm-governance-page.html)
+  and leave the iframe out, or it will render the fallback link / a blank frame.
+
+  CSP / frame-ancestors CHECK (do this before relying on the iframe):
+    The hosted demo at risk.wavervanir.com must ALLOW being framed by wavervanir.com.
+    If its responses send  Content-Security-Policy: frame-ancestors 'none'  (or a list that
+    excludes https://wavervanir.com), OR an  X-Frame-Options: DENY/SAMEORIGIN  header, the
+    browser will refuse to embed it and you'll see a blank/blocked frame.
+    Fix on the demo host: set
+        Content-Security-Policy: frame-ancestors 'self' https://wavervanir.com https://*.wavervanir.com;
+    and remove any conflicting X-Frame-Options header.
+    Verify in the browser devtools Network tab (response headers) or:  curl -I https://risk.wavervanir.com
+-->
+<div class="wv-cbsrm-embed" style="max-width:1080px;margin:0 auto;">
+  <div style="
+      position:relative;
+      width:100%;
+      /* responsive 16:10 box; iframe fills it via absolute positioning */
+      padding-top:62.5%;
+      border-radius:14px;
+      overflow:hidden;
+      background:#0e2a47;
+      box-shadow:0 10px 30px rgba(11,31,51,.15);">
+    <iframe
+      title="WaverVanir CBSRM live risk demo"
+      src="https://risk.wavervanir.com"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+      allowfullscreen>
+      <!-- Fallback for browsers that cannot render the iframe -->
+    </iframe>
+  </div>
+  <p style="font-size:.85rem;color:#33485c;text-align:center;margin:.8rem 0 0;">
+    Trouble viewing the demo?
+    <a href="https://risk.wavervanir.com" target="_blank" rel="noopener noreferrer"
+       style="color:#1f7a8c;font-weight:600;">Open the CBSRM demo in a new tab.</a>
+  </p>
+</div>
