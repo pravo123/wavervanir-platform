@@ -154,6 +154,17 @@
 
     <div id="tab-methodology" class="tabpane card hidden">
       <div class="small muted" id="methNote"></div>
+      <div id="methPanel" class="hidden" style="border:1px solid var(--line);border-radius:10px;padding:16px;margin:10px 0 14px;background:var(--panel-2)">
+        <div class="row">
+          <strong id="mpTitle"></strong>
+          <div class="spacer"></div>
+          <button class="btn-ghost" id="mpHistory" style="margin-right:8px">See live history &amp; analytics →</button>
+          <button class="btn-ghost" id="mpClose">Close</button>
+        </div>
+        <div class="small muted" id="mpSub" style="margin-top:2px"></div>
+        <div id="mpBody" style="margin-top:12px"></div>
+      </div>
+      <div class="small muted" style="margin:6px 2px 6px">Click any lens for its full methodology.</div>
       <table id="methTable"><thead><tr><th>Lens</th><th>Family</th><th>Unit</th><th>Source</th></tr></thead><tbody></tbody></table>
     </div>
 
@@ -288,6 +299,7 @@ function enterTerminal(user){
 function clearPanes(){
   $("lensPanel").classList.add("hidden");
   $("condGrid").innerHTML=""; $("condMeta").textContent="";
+  $("methPanel").classList.add("hidden");
   $("methNote").textContent=""; $("methTable").querySelector("tbody").innerHTML="";
   $("auditMeta").textContent=""; $("chainPill").textContent=""; $("chainPill").className="pill";
   $("auditTable").querySelector("tbody").innerHTML="";
@@ -328,7 +340,7 @@ async function loadConditions(){
   $("condMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
   $("condGrid").innerHTML = j.readings.map(rd => rd.status==="ok"
     ? `<div class="lens" data-lens="${rd.id}" style="cursor:pointer"><div class="k">${rd.label}</div><div class="v">${fmtVal(rd)}</div>
-        <div class="m">${rd.source}${rd.as_of?" · "+rd.as_of:""}</div></div>`
+        <div class="m">${rd.source}${rd.as_of?" · "+rd.as_of:""}${rd.stale?" · last good (refreshing)":""}</div></div>`
     : `<div class="lens bad" data-lens="${rd.id}" style="cursor:pointer"><div class="k">${rd.label}</div><div class="v">unavailable</div>
         <div class="m">${rd.source}</div></div>`).join("");
   $("condGrid").querySelectorAll("[data-lens]").forEach(el => el.onclick = () => openLens(el.dataset.lens));
@@ -384,13 +396,38 @@ async function openLens(id){
   p.scrollIntoView({block:"nearest"});
 }
 $("lpClose").onclick = () => $("lensPanel").classList.add("hidden");
+function escHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+let methById = {};
 async function loadMethodology(){
+  $("methPanel").classList.add("hidden");
   const res = await api("/v1/desk/methodology");
   if(res.status===403){ $("methNote").textContent="Subscribe to unlock the methodology catalog."; $("methTable").querySelector("tbody").innerHTML=""; return gateLost(); }
   const j = await res.json(); $("methNote").textContent = j.note;
+  methById = {}; j.lenses.forEach(l => methById[l.id] = l);
   $("methTable").querySelector("tbody").innerHTML = j.lenses.map(l =>
-    `<tr><td>${l.label}</td><td>${l.lens}</td><td>${l.unit}</td><td>${l.source}</td></tr>`).join("");
+    `<tr data-meth="${l.id}" style="cursor:pointer"><td>${escHtml(l.label)}</td><td>${escHtml(l.lens)}</td><td>${escHtml(l.unit)}</td><td>${escHtml(l.source)}</td></tr>`).join("");
+  $("methTable").querySelectorAll("[data-meth]").forEach(el => el.onclick = () => openMethodology(el.dataset.meth));
 }
+function methSection(h, body){
+  return `<div style="margin-bottom:13px"><div style="font-weight:600;margin-bottom:3px">${h}</div>`
+       + `<div style="line-height:1.55">${escHtml(body)}</div></div>`;
+}
+function openMethodology(id){
+  const l = methById[id]; if(!l) return;
+  const p = $("methPanel"); p.classList.remove("hidden");
+  $("mpTitle").textContent = l.label;
+  $("mpSub").textContent = [l.lens, l.unit, l.source].filter(Boolean).join(" · ");
+  const d = l.detail;
+  $("mpBody").innerHTML = d
+    ? methSection("What it measures", d.what)
+      + methSection("How CBSRM computes it", d.how)
+      + methSection("How to read it", d.interpret)
+      + (d.reference ? `<div class="small muted" style="margin-top:10px">Reference · ${escHtml(d.reference)}</div>` : "")
+    : '<div class="small muted">Detailed write-up coming soon.</div>';
+  $("mpHistory").onclick = () => { activate("conditions"); openLens(id); };
+  p.scrollIntoView({block:"nearest"});
+}
+$("mpClose").onclick = () => $("methPanel").classList.add("hidden");
 async function loadAudit(){
   const res = await api("/v1/desk/audit/export");
   if(res.status===403){ $("auditMeta").textContent="Subscribe to unlock the access ledger."; $("chainPill").textContent=""; $("chainPill").className="pill"; $("auditTable").querySelector("tbody").innerHTML=""; return gateLost(); }
