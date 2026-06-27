@@ -235,30 +235,63 @@ def _options_reading_live(settings) -> dict:
 
 # ── fund redemption pressure (real flows) ────────────────────────────────────
 
+# AUM-weighted fund sample. The per-fund statistics calls are fetched
+# concurrently (financialdata.net Enterprise allows 50 req/s) so the whole lens
+# resolves in ~2s wall-clock instead of ~8s sequential — which used to graze the
+# 9s lens timeout and intermittently degrade the card to "unavailable".
+_FUND_SAMPLE_SIZE = 16
+_FUND_FETCH_WORKERS = 8
+_FUND_FETCH_BUDGET_S = 7.0
+
+
+def _fund_one(settings, fsym) -> Optional[tuple]:
+    """(net_flow, net_assets, period) for one fund, or None. Network-bound."""
+    from wavervanir_api.providers.financialdata import get_json
+
+    try:
+        d = get_json(settings, "mutual-fund-statistics", params={"identifier": fsym})
+    except Exception:
+        return None
+    if not isinstance(d, list) or not d:
+        return None
+    r = d[0]
+    na = float(r.get("net_assets") or 0)
+    if na <= 0:
+        return None
+    red = sum(float(r.get(f"share_redemption_preceding_month{i}") or 0) for i in (1, 2, 3))
+    sal = sum(float(r.get(f"share_sale_preceding_month{i}") or 0) for i in (1, 2, 3))
+    return (red - sal, na, str(r.get("period_of_report") or ""))
+
+
 def _fund_reading_live(settings) -> dict:
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     from wavervanir_api.providers.financialdata import get_json
 
     syms = get_json(settings, "mutual-fund-symbols", params={"offset": 0})
     if not isinstance(syms, list) or not syms:
         return _unavailable("FUND-FRAGILITY", "fund universe unavailable")
-    sample = [s.get("trading_symbol") for s in syms[:12] if s.get("trading_symbol")]
+    sample = [s.get("trading_symbol") for s in syms[:_FUND_SAMPLE_SIZE]
+              if s.get("trading_symbol")]
+
     net_flow, net_assets, used, latest = 0.0, 0.0, 0, ""
-    for f in sample:
-        try:
-            d = get_json(settings, "mutual-fund-statistics", params={"identifier": f})
-        except Exception:
-            continue
-        if not isinstance(d, list) or not d:
-            continue
-        r = d[0]
-        na = float(r.get("net_assets") or 0)
-        red = sum(float(r.get(f"share_redemption_preceding_month{i}") or 0) for i in (1, 2, 3))
-        sal = sum(float(r.get(f"share_sale_preceding_month{i}") or 0) for i in (1, 2, 3))
-        if na > 0:
-            net_flow += (red - sal)
+    ex = ThreadPoolExecutor(max_workers=_FUND_FETCH_WORKERS)
+    futs = [ex.submit(_fund_one, settings, f) for f in sample]
+    try:
+        for fut in as_completed(futs, timeout=_FUND_FETCH_BUDGET_S):
+            res = fut.result()
+            if res is None:
+                continue
+            df, na, per = res
+            net_flow += df
             net_assets += na
             used += 1
-            latest = max(latest, str(r.get("period_of_report") or ""))
+            latest = max(latest, per)
+    except TimeoutError:
+        pass  # aggregate whatever returned within budget; don't blank the card
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
+
     if used == 0 or net_assets <= 0:
         return _unavailable("FUND-FRAGILITY", "no fund flow data")
     pct = round(100.0 * net_flow / net_assets, 2)
