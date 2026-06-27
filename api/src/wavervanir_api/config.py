@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     access_token_ttl_min: int = Field(default=15, alias="WAVERVANIR_ACCESS_TTL_MIN")
     refresh_token_ttl_days: int = Field(default=7, alias="WAVERVANIR_REFRESH_TTL_DAYS")
 
+    # ── owner/admin accounts ──
+    # Comma-separated emails granted full admin (all functions) on sign-up/login.
+    # The owner registers this email with a password of their choosing; the code
+    # never needs the password value — it grants admin by matching the email.
+    admin_emails: str = Field(
+        default="prabhawa@wavervanir.com", alias="WAVERVANIR_ADMIN_EMAILS"
+    )
+
     # ── data-provider env (all OPTIONAL — providers self-disable when blank) ──
     fmp_api_key: str = Field(default="", alias="FMP_API_KEY")
     bullflow_api_key: str = Field(default="", alias="BULLFLOW_API_KEY")
@@ -70,6 +78,15 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Cached settings accessor. Tests reset via ``get_settings.cache_clear()``."""
     return Settings()
+
+
+def admin_email_set(settings: Settings) -> set[str]:
+    """Normalised set of owner/admin emails from ``settings.admin_emails``."""
+    return {
+        e.strip().lower()
+        for e in (settings.admin_emails or "").split(",")
+        if e.strip()
+    }
 
 
 @dataclass(frozen=True)

@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from wavervanir_api import __version__
 from wavervanir_api.config import get_settings
 from wavervanir_api.db import get_engine
+from wavervanir_api.routes import admin as admin_routes
 from wavervanir_api.routes import broker_snapshot as broker_snapshot_routes
 from wavervanir_api.routes import cbsrm as cbsrm_routes
 from wavervanir_api.routes import data as data_routes
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     # CBSRM Desk paid terminal: user sign-in + entitlement-gated routes.
     app.include_router(users_routes.router, tags=["auth"])
     app.include_router(desk_routes.router, prefix="/v1", tags=["desk"])
+    app.include_router(admin_routes.router, prefix="/v1", tags=["admin"])
 
     # The authenticated terminal SPA (same-origin, so no CORS needed). Served at
     # /app; calls /auth/* and /v1/desk/* with the bearer JWT it holds in memory.

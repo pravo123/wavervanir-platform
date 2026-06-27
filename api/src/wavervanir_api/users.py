@@ -22,7 +22,7 @@ from fastapi import Depends, Header, HTTPException, Request, status
 from sqlmodel import Session, select
 
 from wavervanir_api.access_audit import AccessKind, append_access_event
-from wavervanir_api.config import Settings, get_settings
+from wavervanir_api.config import Settings, admin_email_set, get_settings
 from wavervanir_api.db import User, get_engine
 from wavervanir_api.security import (
     TokenError,
@@ -78,6 +78,7 @@ class UserContext:
     name: str
     plan: str
     status: str
+    is_admin: bool = False
 
     @classmethod
     def from_user(cls, user: User) -> "UserContext":
@@ -87,10 +88,14 @@ class UserContext:
             name=user.name,
             plan=user.plan,
             status=user.status,
+            is_admin=bool(user.is_admin),
         )
 
     @property
     def has_terminal(self) -> bool:
+        # Admins have full access to every desk function regardless of subscription.
+        if self.is_admin:
+            return True
         return self.plan in TERMINAL_PLANS and self.status in ENTITLED_STATUSES
 
 
@@ -142,6 +147,8 @@ class AuthService:
                 plan="free",
                 status="inactive",
                 is_active=True,
+                # The configured owner email(s) get admin (full access) on sign-up.
+                is_admin=email in admin_email_set(self.settings),
             )
             session.add(user)
             session.commit()
@@ -183,6 +190,10 @@ class AuthService:
                 )
                 raise AccountDisabled("account is disabled")
 
+            # Self-heal: promote a pre-existing account to admin if its email is
+            # now in the configured owner list (idempotent).
+            if user.email in admin_email_set(self.settings) and not user.is_admin:
+                user.is_admin = True
             user.last_login_at = datetime.now(timezone.utc)
             session.add(user)
             session.commit()
@@ -279,6 +290,58 @@ class AuthService:
             session.commit()
             session.refresh(user)
             return user
+
+    # -- admin provisioning (operator tooling) --------------------------------
+
+    def set_admin(
+        self, *, email: Optional[str] = None, user_id: Optional[int] = None, is_admin: bool = True
+    ) -> User:
+        """Promote/demote a user's admin flag. Returns the updated user."""
+        with Session(self._engine) as session:
+            user: Optional[User] = None
+            if user_id is not None:
+                user = self._by_id(session, user_id)
+            elif email is not None:
+                user = self._by_email(session, _normalise_email(email))
+            if user is None:
+                raise InvalidCredentials("user not found for admin update")
+            user.is_admin = bool(is_admin)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            return user
+
+    def set_password(self, *, email: str, password: str) -> User:
+        """Reset a user's password. Returns the updated user."""
+        if not password or len(password) < MIN_PASSWORD_LEN:
+            raise WeakPassword(f"password must be at least {MIN_PASSWORD_LEN} characters")
+        with Session(self._engine) as session:
+            user = self._by_email(session, _normalise_email(email))
+            if user is None:
+                raise InvalidCredentials("user not found for password reset")
+            user.password_hash = hash_password(password)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            return user
+
+    def provision_admin(
+        self, *, email: str, password: str, name: str = "", reset_password: bool = False
+    ) -> User:
+        """Create-or-promote an admin (operator bootstrap).
+
+        New user → register with ``password`` then flag admin. Existing user →
+        promote to admin; the password is only changed when ``reset_password``
+        is set (never silently overwritten).
+        """
+        email = _normalise_email(email)
+        with Session(self._engine) as session:
+            exists = self._by_email(session, email) is not None
+        if not exists:
+            self.register(email=email, password=password, name=name)
+        elif reset_password:
+            self.set_password(email=email, password=password)
+        return self.set_admin(email=email, is_admin=True)
 
     # -- Stripe webhook sync (increment 2) ------------------------------------
 
@@ -435,5 +498,34 @@ def require_desk(
         kind=AccessKind.ACCESS_GRANTED,
         route=route,
         payload={"plan": ctx.plan},
+    )
+    return ctx
+
+
+def require_admin(
+    request: Request,
+    ctx: UserContext = Depends(require_user),
+    settings: Settings = Depends(get_settings),
+) -> UserContext:
+    """Default-deny admin gate (full-access owner). Logs to the access ledger."""
+    route = request.url.path
+    if not ctx.is_admin:
+        append_access_event(
+            settings=settings,
+            subject=f"user:{ctx.user_id}",
+            kind=AccessKind.ACCESS_DENIED,
+            route=route,
+            payload={"reason": "not_admin"},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"error": "admin_required"},
+        )
+    append_access_event(
+        settings=settings,
+        subject=f"user:{ctx.user_id}",
+        kind=AccessKind.ADMIN_ACTION,
+        route=route,
+        payload={"admin": ctx.email},
     )
     return ctx

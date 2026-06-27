@@ -26,11 +26,41 @@ Apache-2.0 `cbsrm` package is untouched.
 Desk keeps its own institutional accounts with the same email→password→JWT
 experience; it is not coupled to the retail VolanX account pool.
 
+## Owner / admin access
+
+The configured owner email(s) — `WAVERVANIR_ADMIN_EMAILS`, default
+`prabhawa@wavervanir.com` — get **full admin** automatically on sign-up/login
+(no separate grant). Admins have `is_admin = true`, bypass the subscription gate
+(`has_terminal` is always true for them), and reach the `/v1/admin/*` console:
+
+- `GET /v1/admin/users` — every account (no password material).
+- `POST /v1/admin/entitlement` — grant/revoke any user's plan + status.
+- `POST /v1/admin/set-admin` — promote/demote another account (can't self-demote).
+- `GET /v1/admin/audit/verify` — re-hash and verify the whole access ledger.
+- `GET /v1/admin/audit?subject=user:<id>` — any account's access trail.
+
+The terminal shows an **Admin** tab for admins. Every admin action is written to
+the tamper-evident ledger as `ADMIN_ACTION`.
+
+Provision the owner account securely (password typed at a hidden prompt, never on
+the command line or in chat):
+
+```bash
+python -m wavervanir_api.tools.bootstrap_admin --email prabhawa@wavervanir.com
+# or non-interactively:
+CBSRM_ADMIN_PASSWORD=… python -m wavervanir_api.tools.bootstrap_admin --email prabhawa@wavervanir.com
+```
+
+Because the owner is admin *by email*, simply registering `prabhawa@wavervanir.com`
+through `/auth/register` with any password also makes it admin — the bootstrap
+tool is for first-time/headless setup against the deployed Postgres.
+
 ## Environment
 
 | Var | Source | Purpose |
 |-----|--------|---------|
 | `WAVERVANIR_JWT_SECRET` | Render `generateValue` | signs access/refresh JWTs (rotate off the dev sentinel before serving real users) |
+| `WAVERVANIR_ADMIN_EMAILS` | optional | comma-separated owner emails granted admin (default `prabhawa@wavervanir.com`) |
 | `WAVERVANIR_API_KEY_PEPPER` | Render `generateValue` | existing API-key pepper |
 | `WAVERVANIR_DB_URL` | Render Postgres | dev defaults to SQLite |
 | `STRIPE_API_KEY` / `STRIPE_WEBHOOK_SECRET` | operator | Stripe (test mode in MVP) |

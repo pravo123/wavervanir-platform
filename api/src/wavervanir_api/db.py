@@ -120,6 +120,7 @@ class User(SQLModel, table=True):
     stripe_subscription_id: Optional[str] = Field(default=None, index=True)
     grace_until: Optional[datetime] = Field(default=None)
     is_active: bool = Field(default=True)  # account enabled (independent of subscription)
+    is_admin: bool = Field(default=False)  # owner/operator — full access to /v1/admin/* + all desk routes
     created_at: datetime = Field(default_factory=_utcnow)
     last_login_at: Optional[datetime] = Field(default=None)
 

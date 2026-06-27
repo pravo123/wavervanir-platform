@@ -51,6 +51,7 @@ class UserOut(BaseModel):
     plan: str
     status: str
     has_terminal: bool
+    is_admin: bool = False
 
 
 class TokenResponse(BaseModel):
@@ -68,6 +69,7 @@ def _user_out(ctx: UserContext) -> UserOut:
         plan=ctx.plan,
         status=ctx.status,
         has_terminal=ctx.has_terminal,
+        is_admin=ctx.is_admin,
     )
 
 
