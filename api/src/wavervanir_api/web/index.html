@@ -226,9 +226,16 @@ function enterTerminal(user){
   $("subBanner").classList.toggle("hidden", entitled);
   $("subLink").href = "https://buy.stripe.com/6oU00iawt5DkezAbJ3g7e00"
     + "?client_reference_id=" + encodeURIComponent(user.id);
-  if(entitled){ loadConditions(); }
+  clearPanes();
+  activate("conditions");
 }
-$("logoutBtn").onclick = () => { store.clear(); show("auth"); $("password").value=""; };
+function clearPanes(){
+  $("condGrid").innerHTML=""; $("condMeta").textContent="";
+  $("methNote").textContent=""; $("methTable").querySelector("tbody").innerHTML="";
+  $("auditMeta").textContent=""; $("chainPill").textContent=""; $("chainPill").className="pill";
+  $("auditTable").querySelector("tbody").innerHTML="";
+}
+$("logoutBtn").onclick = () => { store.clear(); clearPanes(); show("auth"); $("password").value=""; };
 $("refreshBtn").onclick = () => activate(currentTab());
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => activate(t.dataset.tab));
 function currentTab(){ return document.querySelector(".tab.active").dataset.tab; }
@@ -253,7 +260,7 @@ function fmtVal(rd){
 async function loadConditions(){
   $("condGrid").innerHTML=""; $("condMeta").textContent="Loading…";
   const res = await api("/v1/desk/conditions?source="+$("condSource").value);
-  if(res.status===403){ return gateLost(); }
+  if(res.status===403){ $("condMeta").textContent=""; $("condGrid").innerHTML='<div class="small muted" style="padding:6px 2px">Subscribe to unlock live conditions.</div>'; return gateLost(); }
   const j = await res.json();
   $("condMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
   $("condGrid").innerHTML = j.readings.map(rd => rd.status==="ok"
@@ -263,13 +270,15 @@ async function loadConditions(){
         <div class="m">${rd.source}</div></div>`).join("");
 }
 async function loadMethodology(){
-  const res = await api("/v1/desk/methodology"); if(res.status===403) return gateLost();
+  const res = await api("/v1/desk/methodology");
+  if(res.status===403){ $("methNote").textContent="Subscribe to unlock the methodology catalog."; $("methTable").querySelector("tbody").innerHTML=""; return gateLost(); }
   const j = await res.json(); $("methNote").textContent = j.note;
   $("methTable").querySelector("tbody").innerHTML = j.lenses.map(l =>
     `<tr><td>${l.label}</td><td>${l.lens}</td><td>${l.unit}</td><td>${l.source}</td></tr>`).join("");
 }
 async function loadAudit(){
-  const res = await api("/v1/desk/audit/export"); if(res.status===403) return gateLost();
+  const res = await api("/v1/desk/audit/export");
+  if(res.status===403){ $("auditMeta").textContent="Subscribe to unlock the access ledger."; $("chainPill").textContent=""; $("chainPill").className="pill"; $("auditTable").querySelector("tbody").innerHTML=""; return gateLost(); }
   const j = await res.json();
   $("auditMeta").textContent = j.count+" events for "+j.subject;
   $("chainPill").textContent = j.chain_ok ? "chain verified ✓" : "chain BROKEN";
