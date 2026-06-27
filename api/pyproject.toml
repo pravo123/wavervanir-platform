@@ -30,6 +30,9 @@ dependencies = [
     "stripe>=8.0",
     "uvicorn[standard]>=0.29",
     "email-validator>=2.1",
+    "psycopg2-binary>=2.9",   # Postgres driver (prod); SQLite needs no driver
+    "numpy>=1.26",            # Diebold-Yilmaz spillover (VAR + generalized FEVD)
+    "pandas>=2.0",            # quarterly resampling of the cbsrm indicator series
     # The hosted API depends on the PUBLIC cbsrm package only.
     # In MVP we install from the pinned v0.9.0 tag on GitHub.
     # Operators developing locally can override with: pip install -e ../../cbsrm

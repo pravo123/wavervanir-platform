@@ -179,6 +179,10 @@ def get_engine(db_url: str):
 
     Re-called with a different URL (e.g. by tests) rebuilds.
     """
+    # Some hosts hand out a legacy ``postgres://`` URL; SQLAlchemy 2.x requires
+    # ``postgresql://``. Normalise so the engine builds.
+    if db_url.startswith("postgres://"):
+        db_url = "postgresql://" + db_url[len("postgres://"):]
     global _engine
     if _engine is None or str(_engine.url) != db_url:
         connect_args = (
