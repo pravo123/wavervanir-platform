@@ -1,0 +1,184 @@
+"""Premium CBSRM Desk routes — gated by an active Desk subscription.
+
+Increment 1 ships the entitlement-gated namespace with identity, status, and a
+self-service audit-trail export — proving the default-deny gate and the
+tamper-evident access ledger end-to-end. The data-rich routes (live conditions,
+any-quarter history, verifiable PipelineRecords) land in increment 3 on the same
+``require_desk`` gate.
+"""
+
+from __future__ import annotations
+
+import datetime as _dt
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+
+from wavervanir_api import desk_analytics, desk_conditions
+from wavervanir_api.access_audit import export_subject, verify_access_chain
+from wavervanir_api.config import Settings, get_settings
+from wavervanir_api.users import UserContext, require_desk
+
+router = APIRouter()
+
+
+def _utc_stamp() -> str:
+    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@router.get("/desk/whoami")
+def whoami(ctx: UserContext = Depends(require_desk)) -> dict:
+    """Identity of the authenticated, entitled Desk user."""
+    return {
+        "user_id": ctx.user_id,
+        "email": ctx.email,
+        "name": ctx.name,
+        "plan": ctx.plan,
+        "status": ctx.status,
+        "terminal_access": True,
+    }
+
+
+@router.get("/desk/status")
+def desk_status(ctx: UserContext = Depends(require_desk)) -> dict:
+    """Entitlement summary for the Desk terminal shell."""
+    return {
+        "product": "CBSRM Desk",
+        "version": 1,
+        "plan": ctx.plan,
+        "status": ctx.status,
+        "entitled": True,
+    }
+
+
+@router.get("/desk/methodology")
+def methodology(ctx: UserContext = Depends(require_desk)) -> dict:
+    """The eight-lens systemic-risk methodology catalog (static, no network)."""
+    return desk_conditions.methodology()
+
+
+@router.get("/desk/conditions")
+def conditions(
+    source: str = Query("live", pattern="^(live|demo)$"),
+    fresh: bool = Query(False, description="bypass the cache and recompute live"),
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """Current systemic-risk readings across CBSRM's lenses.
+
+    ``source=live`` (default) is served from a short-TTL cache so the slow
+    multi-upstream build is paid once, not on every load (``?fresh=true`` forces
+    a recompute). ``source=demo`` returns deterministic synthetic readings.
+    """
+    if source == "demo":
+        return desk_conditions.build(source="demo", generated_at_utc=_utc_stamp(), settings=settings)
+    return desk_conditions.build_cached(
+        source="live", settings=settings, force=fresh, generated_at_utc=_utc_stamp()
+    )
+
+
+@router.get("/desk/lens/{lens_id}")
+def lens_analytics(
+    lens_id: str,
+    source: str = Query("live", pattern="^(live|demo)$"),
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """BI analytics for one lens: time series + summary stats + regime bands.
+
+    ``source=live`` pulls real history (VIX via financialdata.net, ECB/FRED via
+    the cbsrm indicators); ``source=demo`` returns a deterministic synthetic
+    series so the drill-down works fully offline.
+    """
+    if lens_id not in desk_analytics.LENS_META:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "unknown_lens", "lens_id": lens_id},
+        )
+    return desk_analytics.lens_analytics(settings, lens_id, source=source)
+
+
+# A sanitized sample portfolio (no account numbers/tokens) for the terminal's
+# "Load sample" button — positions only, signed market values.
+_SAMPLE_SNAPSHOT = {
+    "schema_version": "1.0",
+    "snapshot_ts": "2026-06-26T20:00:00Z",
+    "account_alias": "desk-demo",
+    "base_currency": "USD",
+    "positions": [
+        {"symbol": "AAPL", "asset_class": "equity", "quantity": 1200, "mark_price": 238.0,
+         "market_value": 285600.0, "unrealized_pnl": 18400.0},
+        {"symbol": "MSFT", "asset_class": "equity", "quantity": 600, "mark_price": 437.0,
+         "market_value": 262200.0, "unrealized_pnl": -5200.0},
+        {"symbol": "SPY", "asset_class": "etf", "quantity": -400, "mark_price": 735.0,
+         "market_value": -294000.0, "unrealized_pnl": 3100.0},
+        {"symbol": "NVDA 280C", "asset_class": "option", "quantity": 50, "mark_price": 12.5,
+         "market_value": 62500.0, "unrealized_pnl": -8200.0},
+        {"symbol": "BTC", "asset_class": "crypto", "quantity": 3.5, "mark_price": 111000.0,
+         "market_value": 388500.0, "unrealized_pnl": 42000.0},
+        {"symbol": "EURUSD", "asset_class": "fx", "quantity": 500000, "mark_price": 1.08,
+         "market_value": 540000.0, "unrealized_pnl": -1500.0},
+    ],
+}
+
+
+@router.get("/desk/portfolio/sample")
+def portfolio_sample(ctx: UserContext = Depends(require_desk)) -> dict:
+    """A sanitized example snapshot for the terminal's portfolio analyzer."""
+    return _SAMPLE_SNAPSHOT
+
+
+@router.post("/desk/portfolio")
+async def portfolio_risk(
+    request: Request,
+    ctx: UserContext = Depends(require_desk),
+) -> dict:
+    """Portfolio risk summary from a sanitized broker snapshot.
+
+    Reuses the file-only ``broker_snapshot`` engine: strict schema validation +
+    a sanitization scrub (rejects any leaked account numbers / tokens) +
+    aggregate exposure / concentration / per-asset-class metrics. No broker
+    connectivity; positions in, risk out.
+    """
+    from wavervanir_api.providers.broker_snapshot import (
+        SnapshotValidationError,
+        risk_summary,
+        scrub_check,
+        validate_snapshot,
+    )
+
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="invalid JSON body")
+    try:
+        snap = validate_snapshot(payload)
+    except SnapshotValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "snapshot_validation_failed", "reason": str(exc),
+                    "scrub_violations": scrub_check(payload)},
+        )
+    return risk_summary(snap).model_dump(mode="json")
+
+
+@router.get("/desk/audit/export")
+def audit_export(
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """The caller's own access trail + a live tamper-evidence check of the ledger.
+
+    ``chain_ok`` re-hashes the whole ledger and is ``True`` only if no row was
+    altered, deleted, or inserted out of band — the "every access is auditable"
+    property institutions buy.
+    """
+    subject = f"user:{ctx.user_id}"
+    events = export_subject(settings, subject)
+    ok, broken = verify_access_chain(settings)
+    return {
+        "subject": subject,
+        "count": len(events),
+        "events": events,
+        "chain_ok": ok,
+        "broken_ids": broken,
+    }

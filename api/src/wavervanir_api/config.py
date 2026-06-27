@@ -21,6 +21,11 @@ DEFAULT_PEPPER_SENTINEL = "local-dev-pepper-change-me"
 # by ``secrets.token_urlsafe(24)`` (32+ chars) — a conservative floor.
 MIN_PEPPER_LENGTH = 24
 
+# Sentinel default for the user-login JWT signing secret. Any deployment that
+# mints user tokens while still on this value is unsafe; security tooling warns.
+DEFAULT_JWT_SENTINEL = "local-dev-jwt-secret-change-me"
+MIN_JWT_SECRET_LENGTH = 24
+
 
 class Settings(BaseSettings):
     """Process-wide settings, populated from env (and optionally from .env)."""
@@ -46,16 +51,43 @@ class Settings(BaseSettings):
     stripe_api_key: str = Field(default="", alias="STRIPE_API_KEY")
     stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
 
+    # ── user sign-in (JWT) — paid CBSRM Desk terminal ──
+    # Signs the access/refresh tokens issued at login. MUST be rotated off the
+    # sentinel before serving real customers (see ``DEFAULT_JWT_SENTINEL``).
+    jwt_secret: str = Field(
+        default="local-dev-jwt-secret-change-me", alias="WAVERVANIR_JWT_SECRET"
+    )
+    access_token_ttl_min: int = Field(default=15, alias="WAVERVANIR_ACCESS_TTL_MIN")
+    refresh_token_ttl_days: int = Field(default=7, alias="WAVERVANIR_REFRESH_TTL_DAYS")
+
+    # ── owner/admin accounts ──
+    # Comma-separated emails granted full admin (all functions) on sign-up/login.
+    # The owner registers this email with a password of their choosing; the code
+    # never needs the password value — it grants admin by matching the email.
+    admin_emails: str = Field(
+        default="prabhawa@wavervanir.com", alias="WAVERVANIR_ADMIN_EMAILS"
+    )
+
     # ── data-provider env (all OPTIONAL — providers self-disable when blank) ──
     fmp_api_key: str = Field(default="", alias="FMP_API_KEY")
     bullflow_api_key: str = Field(default="", alias="BULLFLOW_API_KEY")
     bullflow_data_file: str = Field(default="", alias="BULLFLOW_DATA_FILE")
+    financialdata_api_key: str = Field(default="", alias="FINANCIALDATA_API_KEY")
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Cached settings accessor. Tests reset via ``get_settings.cache_clear()``."""
     return Settings()
+
+
+def admin_email_set(settings: Settings) -> set[str]:
+    """Normalised set of owner/admin emails from ``settings.admin_emails``."""
+    return {
+        e.strip().lower()
+        for e in (settings.admin_emails or "").split(",")
+        if e.strip()
+    }
 
 
 @dataclass(frozen=True)

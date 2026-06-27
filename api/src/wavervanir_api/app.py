@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from wavervanir_api import __version__
 from wavervanir_api.config import get_settings
 from wavervanir_api.db import get_engine
+from wavervanir_api.routes import admin as admin_routes
 from wavervanir_api.routes import broker_snapshot as broker_snapshot_routes
 from wavervanir_api.routes import cbsrm as cbsrm_routes
 from wavervanir_api.routes import data as data_routes
+from wavervanir_api.routes import desk as desk_routes
 from wavervanir_api.routes import health as health_routes
 from wavervanir_api.routes import onboard as onboard_routes
 from wavervanir_api.routes import stripe as stripe_routes
+from wavervanir_api.routes import users as users_routes
 from wavervanir_api.routes import waitlist as waitlist_routes
 
 
@@ -44,5 +50,15 @@ def create_app() -> FastAPI:
     app.include_router(onboard_routes.router, tags=["onboard"])
     app.include_router(data_routes.router, prefix="/v1", tags=["data"])
     app.include_router(broker_snapshot_routes.router, prefix="/v1", tags=["broker-snapshot"])
+    # CBSRM Desk paid terminal: user sign-in + entitlement-gated routes.
+    app.include_router(users_routes.router, tags=["auth"])
+    app.include_router(desk_routes.router, prefix="/v1", tags=["desk"])
+    app.include_router(admin_routes.router, prefix="/v1", tags=["admin"])
+
+    # The authenticated terminal SPA (same-origin, so no CORS needed). Served at
+    # /app; calls /auth/* and /v1/desk/* with the bearer JWT it holds in memory.
+    web_dir = Path(__file__).resolve().parent / "web"
+    if web_dir.is_dir():
+        app.mount("/app", StaticFiles(directory=str(web_dir), html=True), name="terminal")
 
     return app

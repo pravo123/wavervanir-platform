@@ -264,5 +264,7 @@ def test_get_provider_dispatch():
 def test_list_providers_count():
     s = get_settings()
     statuses = list_providers(s)
-    assert len(statuses) == 4
-    assert {st.name for st in statuses} == {"demo", "fmp", "bullflow", "broker_snapshot"}
+    assert len(statuses) == 5
+    assert {st.name for st in statuses} == {
+        "demo", "fmp", "financialdata", "bullflow", "broker_snapshot"
+    }

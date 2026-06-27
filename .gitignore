@@ -42,3 +42,9 @@ Thumbs.db
 
 # --- local handoff artifacts ---
 _handoff/
+
+# --- local caches / scratch ---
+.cbsrm_cache/
+api/.cbsrm_cache/
+api/_smoke_*.py
+api/_serve_*.py
