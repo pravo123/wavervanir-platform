@@ -134,6 +134,20 @@
           <option value="demo">demo</option>
         </select>
       </div>
+      <div id="lensPanel" class="hidden" style="border:1px solid var(--line);border-radius:10px;padding:14px;margin:8px 0 14px;background:var(--panel-2)">
+        <div class="row">
+          <strong id="lpTitle"></strong>
+          <div class="spacer"></div>
+          <button class="btn-ghost" id="lpClose">Close</button>
+        </div>
+        <div class="row" style="gap:20px;align-items:flex-end;margin-top:6px">
+          <div><div class="small muted">current</div><div style="font-size:26px;font-weight:700" id="lpCurrent">—</div></div>
+          <div class="small muted" id="lpStats"></div>
+        </div>
+        <div id="lpChart" style="margin-top:10px"></div>
+        <div class="small muted" id="lpFoot" style="margin-top:6px"></div>
+      </div>
+      <div class="small muted" style="margin:0 2px 6px">Click any lens for history &amp; analytics.</div>
       <div class="grid" id="condGrid"></div>
     </div>
 
@@ -260,6 +274,7 @@ function enterTerminal(user){
   activate("conditions");
 }
 function clearPanes(){
+  $("lensPanel").classList.add("hidden");
   $("condGrid").innerHTML=""; $("condMeta").textContent="";
   $("methNote").textContent=""; $("methTable").querySelector("tbody").innerHTML="";
   $("auditMeta").textContent=""; $("chainPill").textContent=""; $("chainPill").className="pill";
@@ -292,17 +307,70 @@ function fmtVal(rd){
   return "—";
 }
 async function loadConditions(){
+  $("lensPanel").classList.add("hidden");
   $("condGrid").innerHTML=""; $("condMeta").textContent="Loading…";
   const res = await api("/v1/desk/conditions?source="+$("condSource").value);
   if(res.status===403){ $("condMeta").textContent=""; $("condGrid").innerHTML='<div class="small muted" style="padding:6px 2px">Subscribe to unlock live conditions.</div>'; return gateLost(); }
   const j = await res.json();
   $("condMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
   $("condGrid").innerHTML = j.readings.map(rd => rd.status==="ok"
-    ? `<div class="lens"><div class="k">${rd.label}</div><div class="v">${fmtVal(rd)}</div>
+    ? `<div class="lens" data-lens="${rd.id}" style="cursor:pointer"><div class="k">${rd.label}</div><div class="v">${fmtVal(rd)}</div>
         <div class="m">${rd.source}${rd.as_of?" · "+rd.as_of:""}</div></div>`
-    : `<div class="lens bad"><div class="k">${rd.label}</div><div class="v">unavailable</div>
+    : `<div class="lens bad" data-lens="${rd.id}" style="cursor:pointer"><div class="k">${rd.label}</div><div class="v">unavailable</div>
         <div class="m">${rd.source}</div></div>`).join("");
+  $("condGrid").querySelectorAll("[data-lens]").forEach(el => el.onclick = () => openLens(el.dataset.lens));
 }
+
+function fmtNum(v, fmt){
+  if(typeof v!=="number") return "—";
+  if(fmt==="probability") return Math.round(v*100)+"%";
+  if(fmt==="bps") return Math.round(v)+" bps";
+  if(fmt==="ratio") return v.toFixed(3);
+  return v.toFixed(2);
+}
+function lineChartSVG(series, bands, fmt){
+  const w=560,h=170,pad=30, n=series.length;
+  if(!n) return '<div class="small muted">No history.</div>';
+  const vals=series.map(p=>p.value);
+  let mn=Math.min(...vals), mx=Math.max(...vals);
+  const span=(mx-mn)||1;
+  (bands||[]).forEach(b=>{ if(typeof b.upto==="number" && b.upto>=mn-span && b.upto<=mx+span){ mn=Math.min(mn,b.upto); mx=Math.max(mx,b.upto);} });
+  if(mn===mx){ mn-=1; mx+=1; }
+  const X=i=> pad + (n<=1?0:i*(w-2*pad)/(n-1));
+  const Y=v=> h-pad - (v-mn)*(h-2*pad)/(mx-mn);
+  const bl=(bands||[]).filter(b=> typeof b.upto==="number" && b.upto>=mn && b.upto<=mx).map(b =>
+    `<line x1="${pad}" y1="${Y(b.upto).toFixed(1)}" x2="${w-pad}" y2="${Y(b.upto).toFixed(1)}" stroke="var(--line)" stroke-dasharray="3 3"/>`+
+    `<text x="${w-pad}" y="${(Y(b.upto)-3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--muted)">${b.label}</text>`).join("");
+  const pts=series.map((p,i)=>`${X(i).toFixed(1)},${Y(p.value).toFixed(1)}`).join(" ");
+  const lv=series[n-1];
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto">
+    ${bl}
+    <polyline points="${pts}" fill="none" stroke="var(--accent-2)" stroke-width="1.8"/>
+    <circle cx="${X(n-1).toFixed(1)}" cy="${Y(lv.value).toFixed(1)}" r="3.5" fill="var(--accent)"/>
+    <text x="${pad}" y="${h-9}" font-size="9" fill="var(--muted)">${series[0].date}</text>
+    <text x="${w-pad}" y="${h-9}" text-anchor="end" font-size="9" fill="var(--muted)">${lv.date}</text>
+  </svg>`;
+}
+async function openLens(id){
+  const p=$("lensPanel"); p.classList.remove("hidden");
+  $("lpTitle").textContent="Loading…"; $("lpChart").innerHTML=""; $("lpStats").innerHTML=""; $("lpCurrent").textContent="—"; $("lpFoot").textContent="";
+  const res = await api("/v1/desk/lens/"+encodeURIComponent(id)+"?source="+$("condSource").value);
+  if(res.status===403) return gateLost();
+  if(!res.ok){ $("lpTitle").textContent="Unavailable"; return; }
+  const j = await res.json(); const s = j.stats;
+  $("lpTitle").textContent = j.label + (j.unit?(" · "+j.unit):"");
+  if(s){
+    $("lpCurrent").textContent = fmtNum(s.current, j.fmt);
+    $("lpStats").innerHTML = `range ${fmtNum(s.min,j.fmt)} – ${fmtNum(s.max,j.fmt)} &middot; mean ${fmtNum(s.mean,j.fmt)} &middot; pctile ${Math.round(s.percentile*100)}% &middot; z ${s.z} &middot; n ${s.n}`;
+    $("lpChart").innerHTML = lineChartSVG(j.series, j.bands, j.fmt);
+    $("lpFoot").textContent = j.source+" · "+j.source_mode+" · history "+j.series[0].date+" → "+j.series[j.series.length-1].date+" · sha "+j.output_sha256.slice(0,10);
+  } else {
+    $("lpChart").innerHTML = '<div class="small muted">'+(j.note||"No history available.")+'</div>';
+    $("lpFoot").textContent = j.source+" · "+j.source_mode;
+  }
+  p.scrollIntoView({block:"nearest"});
+}
+$("lpClose").onclick = () => $("lensPanel").classList.add("hidden");
 async function loadMethodology(){
   const res = await api("/v1/desk/methodology");
   if(res.status===403){ $("methNote").textContent="Subscribe to unlock the methodology catalog."; $("methTable").querySelector("tbody").innerHTML=""; return gateLost(); }

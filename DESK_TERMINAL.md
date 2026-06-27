@@ -14,7 +14,8 @@ Apache-2.0 `cbsrm` package is untouched.
 | Password + JWT | `security.py` | stdlib **scrypt** (argon2id-class) + stdlib **HS256 JWT** — zero new deps |
 | Tamper-evident ledger | `access_audit.py` (`AccessEvent`) | SHA-256 hash-linked, portable across SQLite + Postgres |
 | Auth routes | `routes/users.py` | `POST /auth/register\|login\|refresh`, `GET /auth/me` |
-| Gated routes | `routes/desk.py` | `GET /v1/desk/whoami\|status\|methodology\|conditions\|audit/export` behind `require_desk` |
+| Gated routes | `routes/desk.py` | `GET /v1/desk/whoami\|status\|methodology\|conditions\|lens/{id}\|audit/export` behind `require_desk` |
+| BI analytics | `desk_analytics.py` | per-lens history + stats (min/max/mean/percentile/z) + regime bands; `GET /v1/desk/lens/{id}` |
 | Entitlement | `db.py` (`User`), `plans.py` (`desk`) | default-deny: `plan ∈ {desk,institutional,regulator}` and `status ∈ {active,grace}` |
 | Terminal UI | `web/index.html` | served same-origin at `/app` (no CORS) |
 | Billing sync | `routes/stripe.py` | checkout → active, payment_failed → grace, subscription deleted → revoked |

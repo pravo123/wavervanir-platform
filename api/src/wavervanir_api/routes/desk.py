@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import datetime as _dt
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from wavervanir_api import desk_conditions
+from wavervanir_api import desk_analytics, desk_conditions
 from wavervanir_api.access_audit import export_subject, verify_access_chain
 from wavervanir_api.config import Settings, get_settings
 from wavervanir_api.users import UserContext, require_desk
@@ -72,6 +72,27 @@ def conditions(
     return desk_conditions.build(
         source=source, generated_at_utc=_utc_stamp(), settings=settings
     )
+
+
+@router.get("/desk/lens/{lens_id}")
+def lens_analytics(
+    lens_id: str,
+    source: str = Query("live", pattern="^(live|demo)$"),
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """BI analytics for one lens: time series + summary stats + regime bands.
+
+    ``source=live`` pulls real history (VIX via financialdata.net, ECB/FRED via
+    the cbsrm indicators); ``source=demo`` returns a deterministic synthetic
+    series so the drill-down works fully offline.
+    """
+    if lens_id not in desk_analytics.LENS_META:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "unknown_lens", "lens_id": lens_id},
+        )
+    return desk_analytics.lens_analytics(settings, lens_id, source=source)
 
 
 @router.get("/desk/audit/export")
