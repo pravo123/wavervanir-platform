@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import datetime as _dt
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from wavervanir_api import desk_analytics, desk_conditions
 from wavervanir_api.access_audit import export_subject, verify_access_chain
@@ -93,6 +93,70 @@ def lens_analytics(
             detail={"error": "unknown_lens", "lens_id": lens_id},
         )
     return desk_analytics.lens_analytics(settings, lens_id, source=source)
+
+
+# A sanitized sample portfolio (no account numbers/tokens) for the terminal's
+# "Load sample" button — positions only, signed market values.
+_SAMPLE_SNAPSHOT = {
+    "schema_version": "1.0",
+    "snapshot_ts": "2026-06-26T20:00:00Z",
+    "account_alias": "desk-demo",
+    "base_currency": "USD",
+    "positions": [
+        {"symbol": "AAPL", "asset_class": "equity", "quantity": 1200, "mark_price": 238.0,
+         "market_value": 285600.0, "unrealized_pnl": 18400.0},
+        {"symbol": "MSFT", "asset_class": "equity", "quantity": 600, "mark_price": 437.0,
+         "market_value": 262200.0, "unrealized_pnl": -5200.0},
+        {"symbol": "SPY", "asset_class": "etf", "quantity": -400, "mark_price": 735.0,
+         "market_value": -294000.0, "unrealized_pnl": 3100.0},
+        {"symbol": "NVDA 280C", "asset_class": "option", "quantity": 50, "mark_price": 12.5,
+         "market_value": 62500.0, "unrealized_pnl": -8200.0},
+        {"symbol": "BTC", "asset_class": "crypto", "quantity": 3.5, "mark_price": 111000.0,
+         "market_value": 388500.0, "unrealized_pnl": 42000.0},
+        {"symbol": "EURUSD", "asset_class": "fx", "quantity": 500000, "mark_price": 1.08,
+         "market_value": 540000.0, "unrealized_pnl": -1500.0},
+    ],
+}
+
+
+@router.get("/desk/portfolio/sample")
+def portfolio_sample(ctx: UserContext = Depends(require_desk)) -> dict:
+    """A sanitized example snapshot for the terminal's portfolio analyzer."""
+    return _SAMPLE_SNAPSHOT
+
+
+@router.post("/desk/portfolio")
+async def portfolio_risk(
+    request: Request,
+    ctx: UserContext = Depends(require_desk),
+) -> dict:
+    """Portfolio risk summary from a sanitized broker snapshot.
+
+    Reuses the file-only ``broker_snapshot`` engine: strict schema validation +
+    a sanitization scrub (rejects any leaked account numbers / tokens) +
+    aggregate exposure / concentration / per-asset-class metrics. No broker
+    connectivity; positions in, risk out.
+    """
+    from wavervanir_api.providers.broker_snapshot import (
+        SnapshotValidationError,
+        risk_summary,
+        scrub_check,
+        validate_snapshot,
+    )
+
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="invalid JSON body")
+    try:
+        snap = validate_snapshot(payload)
+    except SnapshotValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "snapshot_validation_failed", "reason": str(exc),
+                    "scrub_violations": scrub_check(payload)},
+        )
+    return risk_summary(snap).model_dump(mode="json")
 
 
 @router.get("/desk/audit/export")
