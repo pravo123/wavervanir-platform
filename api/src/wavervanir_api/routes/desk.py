@@ -59,18 +59,20 @@ def methodology(ctx: UserContext = Depends(require_desk)) -> dict:
 @router.get("/desk/conditions")
 def conditions(
     source: str = Query("live", pattern="^(live|demo)$"),
+    fresh: bool = Query(False, description="bypass the cache and recompute live"),
     ctx: UserContext = Depends(require_desk),
     settings: Settings = Depends(get_settings),
 ) -> dict:
     """Current systemic-risk readings across CBSRM's lenses.
 
-    ``source=live`` (default) reads current public data via the cbsrm CLI plus
-    the financialdata.net equity-volatility lens, each degrading to
-    ``status="unavailable"`` if its source can't be reached. ``source=demo``
-    returns deterministic synthetic readings for offline preview.
+    ``source=live`` (default) is served from a short-TTL cache so the slow
+    multi-upstream build is paid once, not on every load (``?fresh=true`` forces
+    a recompute). ``source=demo`` returns deterministic synthetic readings.
     """
-    return desk_conditions.build(
-        source=source, generated_at_utc=_utc_stamp(), settings=settings
+    if source == "demo":
+        return desk_conditions.build(source="demo", generated_at_utc=_utc_stamp(), settings=settings)
+    return desk_conditions.build_cached(
+        source="live", settings=settings, force=fresh, generated_at_utc=_utc_stamp()
     )
 
 

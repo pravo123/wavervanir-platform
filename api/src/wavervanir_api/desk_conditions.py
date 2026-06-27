@@ -242,6 +242,64 @@ def build(*, source: str = "live", generated_at_utc: Optional[str] = None, setti
     }
 
 
+# ── cache (serve the slow multi-upstream live build instantly) ──────────────
+
+CONDITIONS_CACHE_TTL_S = 3600  # 1 hour
+
+
+def _aware(dt):
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=_dt.timezone.utc)
+
+
+def _cache_get(settings, key: str):
+    from sqlmodel import Session, select
+
+    from wavervanir_api.db import SnapshotCache, get_engine
+
+    engine = get_engine(settings.db_url)
+    with Session(engine) as s:
+        row = s.exec(select(SnapshotCache).where(SnapshotCache.cache_key == key)).first()
+        return (row.generated_at, row.payload_json) if row else None
+
+
+def _cache_set(settings, key: str, source: str, payload_json: str) -> None:
+    from sqlmodel import Session, select
+
+    from wavervanir_api.db import SnapshotCache, get_engine
+
+    engine = get_engine(settings.db_url)
+    with Session(engine) as s:
+        row = s.exec(select(SnapshotCache).where(SnapshotCache.cache_key == key)).first()
+        now = _dt.datetime.now(_dt.timezone.utc)
+        if row:
+            row.generated_at, row.payload_json, row.source = now, payload_json, source
+        else:
+            row = SnapshotCache(cache_key=key, source=source, generated_at=now,
+                                payload_json=payload_json)
+        s.add(row)
+        s.commit()
+
+
+def build_cached(*, source: str, settings, max_age_s: int = CONDITIONS_CACHE_TTL_S,
+                 force: bool = False, generated_at_utc: Optional[str] = None) -> dict:
+    """Return a cached conditions snapshot if fresher than ``max_age_s``, else
+    recompute (the slow path), cache it, and return it. Adds a ``cache`` field."""
+    key = f"conditions:{source}"
+    if not force:
+        got = _cache_get(settings, key)
+        if got:
+            gen_at, payload_json = got
+            age = (_dt.datetime.now(_dt.timezone.utc) - _aware(gen_at)).total_seconds()
+            if age <= max_age_s:
+                snap = json.loads(payload_json)
+                snap["cache"] = {"hit": True, "age_s": int(age)}
+                return snap
+    snap = build(source=source, settings=settings, generated_at_utc=generated_at_utc)
+    _cache_set(settings, key, source, json.dumps(snap))
+    snap["cache"] = {"hit": False, "age_s": 0}
+    return snap
+
+
 def methodology() -> dict:
     """Static lens catalog — the systemic-risk methodology CBSRM reproduces."""
     specs = _lens_specs()

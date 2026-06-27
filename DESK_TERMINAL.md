@@ -114,11 +114,23 @@ GET /v1/desk/audit/export  → chain_ok=true   (sign-in + every access hash-link
    chooser: VolanX (`volanx.wavervanir.com/login`) | CBSRM (`<api>/app/`). Drive
    via the shared browser; the operator logs in (no credentials handled in chat).
 
+## Live-conditions cache
+
+`GET /v1/desk/conditions?source=live` is served from a short-TTL DB cache
+(`SnapshotCache`, default 1 h) so the slow multi-upstream build (~15-20 s for 13
+lenses) is paid once, not per request — cached reads return in ~1 ms. Force a
+recompute with `?fresh=true`. Keep the cache warm with the refresh tool on a
+scheduler (Render Cron / GitHub Action / cron, every ~30-60 min):
+
+```bash
+python -m wavervanir_api.tools.refresh_conditions   # needs DB + FRED + FINANCIALDATA keys
+```
+
 ## Known limits (MVP)
 
-- `source=live` conditions call upstream providers synchronously (per-lens 6 s
-  timeout); for high traffic, front it with the daily-snapshot cache pattern the
-  public site uses.
+- The cache is per-process/DB-backed; a multi-worker deploy shares it via Postgres.
+  The first request after TTL expiry (with no scheduled refresh) still pays the
+  full build cost — run the refresh tool to avoid that.
 - The hash-linked ledger serializes appends with a process lock (single-worker
   correct); multi-worker deployments need a DB-level sequence.
 - Verifiable `PipelineRecord` routes are deferred until `cbsrm.composer` is

@@ -151,6 +151,24 @@ class AccessEvent(SQLModel, table=True):
     entry_hash: str = Field(default="", index=True)
 
 
+class SnapshotCache(SQLModel, table=True):
+    """Cached output of an expensive computation (e.g. live conditions).
+
+    Keyed by ``cache_key`` (e.g. ``conditions:live``). The endpoint serves the
+    cached ``payload_json`` instantly when it is fresher than the TTL, so a slow
+    multi-upstream live build is paid once (by a scheduled refresh or the first
+    request after expiry), not on every customer load.
+    """
+
+    __tablename__ = "snapshot_cache"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    cache_key: str = Field(index=True, unique=True)
+    source: str = Field(default="live")
+    generated_at: datetime = Field(default_factory=_utcnow, index=True)
+    payload_json: str = Field(default="")
+
+
 # ── engine / session ────────────────────────────────────────────────────────
 
 _engine = None
