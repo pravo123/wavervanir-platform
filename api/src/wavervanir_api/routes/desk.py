@@ -60,14 +60,18 @@ def methodology(ctx: UserContext = Depends(require_desk)) -> dict:
 def conditions(
     source: str = Query("live", pattern="^(live|demo)$"),
     ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
 ) -> dict:
     """Current systemic-risk readings across CBSRM's lenses.
 
-    ``source=live`` (default) reads current public data via the cbsrm CLI, each
-    lens degrading to ``status="unavailable"`` if its source can't be reached.
-    ``source=demo`` returns deterministic synthetic readings for offline preview.
+    ``source=live`` (default) reads current public data via the cbsrm CLI plus
+    the financialdata.net equity-volatility lens, each degrading to
+    ``status="unavailable"`` if its source can't be reached. ``source=demo``
+    returns deterministic synthetic readings for offline preview.
     """
-    return desk_conditions.build(source=source, generated_at_utc=_utc_stamp())
+    return desk_conditions.build(
+        source=source, generated_at_utc=_utc_stamp(), settings=settings
+    )
 
 
 @router.get("/desk/audit/export")

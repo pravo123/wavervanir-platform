@@ -27,14 +27,14 @@ def test_methodology_gated(client):
     assert r.status_code == 403
 
 
-def test_methodology_lists_eight_lenses(client):
+def test_methodology_lists_lenses(client):
     token = _entitled_token(client)
     r = client.get("/v1/desk/methodology", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200
     body = r.json()
     assert body["product"] == "CBSRM"
-    assert len(body["lenses"]) == 8
-    assert {l["id"] for l in body["lenses"]} >= {"ECB-CISS-US", "STLFSI4", "SAHM"}
+    assert len(body["lenses"]) == 9  # 8 ECB/FRED + 1 financialdata.net (VIX)
+    assert {l["id"] for l in body["lenses"]} >= {"ECB-CISS-US", "STLFSI4", "SAHM", "EQUITY-VIX"}
 
 
 def test_conditions_requires_auth(client):
@@ -49,9 +49,10 @@ def test_conditions_demo_is_wellformed_and_deterministic(client):
     body = r.json()
     assert body["schema"] == "cbsrm-desk-conditions/1.0.0"
     assert body["source"] == "demo"
-    assert body["summary"] == {"total": 8, "live": 8, "unavailable": 0}
+    assert body["summary"] == {"total": 9, "live": 9, "unavailable": 0}
     assert len(body["output_sha256"]) == 64
     assert all(rd["status"] == "ok" for rd in body["readings"])
+    assert any(rd["id"] == "EQUITY-VIX" for rd in body["readings"])
     # Content hash is over the readings only → stable across calls.
     again = client.get("/v1/desk/conditions?source=demo", headers=h)
     assert again.json()["output_sha256"] == body["output_sha256"]

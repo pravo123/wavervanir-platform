@@ -25,6 +25,7 @@
 #     STRIPE_PRICE_PRO        price_...     (Stripe Price id for the $499 tier)
 #     STRIPE_PRICE_DESK       price_...     (Stripe Price id for the $48k/yr Desk)
 #     FRED_API_KEY            (optional — enables live /v1/desk/conditions FRED lenses)
+#     FINANCIALDATA_API_KEY   (optional — enables the financialdata.net VIX/markets lens)
 #     FMP_API_KEY             (optional — leave blank to self-disable that feed)
 #
 # SECURITY: never put sk_*, whsec_*, or any real secret in this committed file.
@@ -80,6 +81,8 @@ services:
       - key: STRIPE_PRICE_DESK
         sync: false
       - key: FRED_API_KEY
+        sync: false
+      - key: FINANCIALDATA_API_KEY
         sync: false
       - key: FMP_API_KEY
         sync: false

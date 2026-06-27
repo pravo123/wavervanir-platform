@@ -282,12 +282,14 @@ function activate(name){
 $("condSource").onchange = loadConditions;
 
 function fmtVal(rd){
+  if(typeof rd.value==="number"){
+    if(rd.fmt==="probability") return Math.round(rd.value*100)+"%";
+    if(rd.fmt==="bps") return Math.round(rd.value)+" bps";
+    if(rd.fmt==="ratio") return rd.value.toFixed(3);
+    return rd.value.toFixed(2);
+  }
   if(rd.state) return rd.state.replaceAll("_"," ");
-  if(typeof rd.value!=="number") return "—";
-  if(rd.fmt==="probability") return Math.round(rd.value*100)+"%";
-  if(rd.fmt==="bps") return Math.round(rd.value)+" bps";
-  if(rd.fmt==="ratio") return rd.value.toFixed(3);
-  return rd.value.toFixed(2);
+  return "—";
 }
 async function loadConditions(){
   $("condGrid").innerHTML=""; $("condMeta").textContent="Loading…";

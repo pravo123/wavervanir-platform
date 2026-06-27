@@ -24,6 +24,7 @@ from wavervanir_api.providers.base import (
 )
 from wavervanir_api.providers.demo import DemoProvider
 from wavervanir_api.providers.fmp import FmpProvider
+from wavervanir_api.providers.financialdata import FinancialDataProvider
 from wavervanir_api.providers.bullflow import BullflowProvider
 
 __all__ = [
@@ -33,6 +34,7 @@ __all__ = [
     "ProviderUnavailableError",
     "DemoProvider",
     "FmpProvider",
+    "FinancialDataProvider",
     "BullflowProvider",
     "list_providers",
     "get_provider",
@@ -44,6 +46,7 @@ def list_providers(settings) -> list[ProviderStatus]:
     return [
         DemoProvider().status(settings),
         FmpProvider().status(settings),
+        FinancialDataProvider().status(settings),
         BullflowProvider().status(settings),
         # broker_snapshot is intentionally NOT here — it is not a fetch-by-symbol
         # provider, it is a validate/aggregate surface for an uploaded payload.
@@ -64,6 +67,8 @@ def get_provider(name: str) -> DataProvider:
         return DemoProvider()
     if name == "fmp":
         return FmpProvider()
+    if name == "financialdata":
+        return FinancialDataProvider()
     if name == "bullflow":
         return BullflowProvider()
-    raise KeyError(f"unknown provider: {name!r}; expected one of demo|fmp|bullflow")
+    raise KeyError(f"unknown provider: {name!r}; expected one of demo|fmp|financialdata|bullflow")

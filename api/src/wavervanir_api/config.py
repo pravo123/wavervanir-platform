@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     fmp_api_key: str = Field(default="", alias="FMP_API_KEY")
     bullflow_api_key: str = Field(default="", alias="BULLFLOW_API_KEY")
     bullflow_data_file: str = Field(default="", alias="BULLFLOW_DATA_FILE")
+    financialdata_api_key: str = Field(default="", alias="FINANCIALDATA_API_KEY")
 
 
 @lru_cache(maxsize=1)

@@ -149,10 +149,62 @@ def _demo_reading(spec: tuple) -> dict:
     return out
 
 
-def build(*, source: str = "live", generated_at_utc: Optional[str] = None) -> dict:
+# ── financialdata.net lens: equity volatility (VIX) systemic stress ──
+_FD_LENS = {"id": "EQUITY-VIX", "label": "Equity volatility · VIX",
+            "lens": "System stress", "unit": "VIX pts", "source": "financialdata.net"}
+
+
+def _fd_unavailable(reason: str) -> dict:
+    return {**_FD_LENS, "status": "unavailable", "reason": reason}
+
+
+def _classify_vix(v: float) -> str:
+    if v < 15:
+        return "CALM"
+    if v < 20:
+        return "NORMAL"
+    if v < 30:
+        return "ELEVATED"
+    return "STRESS"
+
+
+def _equity_stress_live(settings) -> dict:
+    """Latest VIX close (+ S&P daily move) via financialdata.net. Never raises.
+
+    Uses ``index-prices`` (daily close, Standard tier, newest record first) which
+    is more reliable than the market-hours-only real-time quotes feed.
+    """
+    from wavervanir_api.providers.financialdata import index_prices
+
+    try:
+        vix = index_prices(settings, "^VIX")
+    except Exception as exc:
+        return _fd_unavailable(f"{type(exc).__name__}")
+    if not vix or not isinstance(vix[0].get("close"), (int, float)):
+        return _fd_unavailable("VIX price not returned (check key / subscription)")
+    level = round(float(vix[0]["close"]), 2)
+    out = {**_FD_LENS, "status": "ok", "as_of": str(vix[0].get("date", ""))[:10],
+           "fmt": "level", "value": level, "state": _classify_vix(level)}
+    try:
+        spx = index_prices(settings, "^GSPC")
+        if spx and len(spx) >= 2 and float(spx[1].get("close") or 0):
+            chg = (float(spx[0]["close"]) / float(spx[1]["close"]) - 1.0) * 100.0
+            out["interpretation"] = f"S&P 500 {chg:+.2f}%"
+    except Exception:
+        pass
+    return out
+
+
+def _equity_stress_demo() -> dict:
+    return {**_FD_LENS, "status": "ok", "as_of": "2026-06-26", "fmt": "level",
+            "value": 14.2, "state": "CALM", "interpretation": "S&P 500 +0.31%", "demo": True}
+
+
+def build(*, source: str = "live", generated_at_utc: Optional[str] = None, settings=None) -> dict:
     specs = _lens_specs()
     if source == "demo":
         readings = [_demo_reading(s) for s in specs]
+        readings.append(_equity_stress_demo())
         disclaimer = ("DEMONSTRATION readings — synthetic, not live market data. "
                       "Use source=live for current public readings.")
     else:
@@ -163,6 +215,12 @@ def build(*, source: str = "live", generated_at_utc: Optional[str] = None) -> di
                 r = {"id": s[0], "label": s[1], "lens": s[2], "unit": s[7],
                      "source": s[8], "status": "unavailable", "reason": "upstream timeout"}
             readings.append(r)
+        # financialdata.net lens (needs the API key on ``settings``).
+        if settings is not None:
+            fd = _call_with_timeout(lambda: _equity_stress_live(settings), LIVE_LENS_TIMEOUT_S)
+            readings.append(fd if fd is not None else _fd_unavailable("upstream timeout"))
+        else:
+            readings.append(_fd_unavailable("FINANCIALDATA_API_KEY not configured"))
         disclaimer = ("Latest available public readings, each dated to its provider's "
                       "last publication. Risk measurement — not investment advice.")
     ok = [r for r in readings if r.get("status") == "ok"]
@@ -188,5 +246,8 @@ def methodology() -> dict:
         "lenses": [
             {"id": s[0], "label": s[1], "lens": s[2], "unit": s[7], "source": s[8]}
             for s in specs
+        ] + [
+            {"id": _FD_LENS["id"], "label": _FD_LENS["label"], "lens": _FD_LENS["lens"],
+             "unit": _FD_LENS["unit"], "source": _FD_LENS["source"]}
         ],
     }

@@ -66,6 +66,7 @@ tool is for first-time/headless setup against the deployed Postgres.
 | `STRIPE_API_KEY` / `STRIPE_WEBHOOK_SECRET` | operator | Stripe (test mode in MVP) |
 | `STRIPE_PRICE_DESK` | operator | Stripe Price id for the $48k/yr Desk |
 | `FRED_API_KEY` | operator (optional) | enables the FRED lenses in `/v1/desk/conditions?source=live` |
+| `FINANCIALDATA_API_KEY` | operator (optional) | enables the financialdata.net provider + the equity-volatility (VIX) lens |
 | `WAVERVANIR_ACCESS_TTL_MIN` / `WAVERVANIR_REFRESH_TTL_DAYS` | optional | default 15 min / 7 days |
 
 ## Stripe Payment Link wiring (the one operator detail that matters)
