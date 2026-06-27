@@ -94,6 +94,62 @@ class WaitlistEntry(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_utcnow)
 
 
+class User(SQLModel, table=True):
+    """A paying-customer login for the CBSRM Desk terminal.
+
+    Distinct from :class:`ApiKey` (which is a programmatic bearer token minted at
+    Stripe checkout). A ``User`` is an interactive account: email + a hashed
+    password, plus an *entitlement* (``plan`` + ``status``) that the Stripe
+    webhook keeps in sync with the customer's subscription.
+
+    We never store the raw password — only a self-describing, salted hash (see
+    ``security.hash_password``). ``is_active`` gates the account itself; ``plan``
+    + ``status`` gate access to premium Desk routes (default-deny).
+    """
+
+    __tablename__ = "users"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True, unique=True)
+    password_hash: str
+    name: str = Field(default="")
+    # Entitlement (kept in sync by the Stripe webhook). ``desk`` == paid terminal.
+    plan: str = Field(default="free", index=True)
+    status: str = Field(default="inactive", index=True)  # "active"|"inactive"|"revoked"|"grace"
+    stripe_customer_id: Optional[str] = Field(default=None, index=True)
+    stripe_subscription_id: Optional[str] = Field(default=None, index=True)
+    grace_until: Optional[datetime] = Field(default=None)
+    is_active: bool = Field(default=True)  # account enabled (independent of subscription)
+    created_at: datetime = Field(default_factory=_utcnow)
+    last_login_at: Optional[datetime] = Field(default=None)
+
+
+class AccessEvent(SQLModel, table=True):
+    """Tamper-evident, hash-linked ledger of sign-ins and premium accesses.
+
+    Each row chains to the previous one: ``entry_hash`` = SHA-256 over
+    (prev_hash || ts || subject || kind || route || payload_sha256). Re-hashing
+    the chain top-to-bottom must reproduce every stored hash, otherwise a row
+    was altered, deleted, or inserted out of band. Payloads are hashed, never
+    stored raw, so the ledger holds no PII.
+
+    Unlike ``cbsrm.audit.chain`` (SQLite-only), this lives on the SQLModel engine
+    so it is identical on SQLite (dev) and Postgres (prod). This is the
+    "every access is auditable" property the Desk sells to institutions.
+    """
+
+    __tablename__ = "access_events"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ts: datetime = Field(default_factory=_utcnow, index=True)
+    subject: str = Field(index=True)  # e.g. "user:42" or "user:anon"
+    kind: str = Field(index=True)     # REGISTERED|SIGNIN|SIGNIN_FAILED|TOKEN_REFRESH|ACCESS_GRANTED|ACCESS_DENIED
+    route: str = Field(default="")
+    payload_sha256: str = Field(default="")
+    prev_hash: Optional[str] = Field(default=None)
+    entry_hash: str = Field(default="", index=True)
+
+
 # ── engine / session ────────────────────────────────────────────────────────
 
 _engine = None

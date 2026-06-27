@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from wavervanir_api.plans import (
+    PLAN_DESK,
     PLAN_FREE,
     PLAN_INSTITUTIONAL,
     PLAN_PRO,
@@ -19,8 +20,18 @@ from wavervanir_api.plans import (
 
 
 def test_plan_names_are_exhaustive():
-    expected = {"free", "researcher", "pro", "institutional", "regulator"}
+    expected = {"free", "researcher", "pro", "institutional", "regulator", "desk"}
     assert set(all_plan_names()) == expected
+
+
+def test_desk_plan_is_self_serve_and_high_touch():
+    # The $48k/yr CBSRM Desk is sold via a Stripe Payment Link (public_checkout)
+    # while also getting white-glove onboarding (sales_assisted).
+    assert PLAN_DESK.price_env == "STRIPE_PRICE_DESK"
+    assert PLAN_DESK.public_checkout is True
+    assert PLAN_DESK.sales_assisted is True
+    assert PLAN_DESK.daily_cap >= PLAN_PRO.daily_cap
+    assert is_known_plan("desk") is True
 
 
 def test_caps_are_monotonic_by_intent():

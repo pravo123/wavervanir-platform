@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CBSRM Desk — WaverVanir</title>
+<style>
+  :root{
+    --bg:#0b0f15; --panel:#111824; --panel-2:#0e141d; --line:#1f2a3a;
+    --ink:#e6edf6; --muted:#8a97aa; --accent:#3A78C9; --accent-2:#5b9be0;
+    --gold:#C9A23A; --green:#3fb27f; --red:#d96a6a; --amber:#d9a441;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.45}
+  a{color:var(--accent-2);text-decoration:none}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .wrap{max-width:1000px;margin:0 auto;padding:22px 18px 60px}
+  header{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);
+    padding-bottom:14px;margin-bottom:22px}
+  .mark{width:30px;height:30px;flex:none}
+  .brand{font-weight:700;letter-spacing:.3px}
+  .brand .gold{color:var(--gold)}
+  .tag{color:var(--muted);font-size:12px;margin-left:auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .center{max-width:420px;margin:6vh auto 0}
+  h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:0 0 12px;color:var(--ink)}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px}
+  input{width:100%;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:8px;color:var(--ink);font-size:14px}
+  input:focus{outline:none;border-color:var(--accent)}
+  button{cursor:pointer;font-size:14px;font-weight:600;border-radius:8px;border:1px solid transparent}
+  .btn{width:100%;padding:11px;background:var(--accent);color:#fff;margin-top:18px}
+  .btn:hover{background:var(--accent-2)} .btn:disabled{opacity:.55;cursor:default}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);padding:8px 12px;width:auto}
+  .switch{margin-top:14px;font-size:13px;color:var(--muted);text-align:center}
+  .switch a{cursor:pointer}
+  .err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .spacer{flex:1}
+  .pill{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.ok{color:var(--green);border-color:#1f3a2e}
+  .pill.no{color:var(--amber);border-color:#3a2f1f}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px}
+  .lens{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:13px}
+  .lens .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .lens .v{font-size:24px;font-weight:700;margin:6px 0 2px}
+  .lens .m{font-size:11px;color:var(--muted)}
+  .lens.bad .v{color:var(--muted);font-size:14px;font-weight:500}
+  .tabs{display:flex;gap:6px;margin:18px 0 4px;border-bottom:1px solid var(--line)}
+  .tab{padding:8px 12px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-size:13px}
+  .tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:500}
+  .hash{color:var(--muted)}
+  .banner{background:#15202e;border:1px solid var(--line);border-left:3px solid var(--gold);
+    border-radius:8px;padding:14px 16px;margin-bottom:16px}
+  .muted{color:var(--muted)} .small{font-size:12px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+      <path d="M24 3 L41 11 V25 C41 35 33 42 24 45 C15 42 7 35 7 25 V11 Z"
+        fill="none" stroke="var(--gold)" stroke-width="2"/>
+      <path d="M14 30 L20 24 L26 28 L34 18" fill="none" stroke="var(--accent-2)" stroke-width="2.4"/>
+      <path d="M30 18 H34 V22" fill="none" stroke="var(--gold)" stroke-width="2.2"/>
+    </svg>
+    <div>
+      <div class="brand">Waver<span class="gold">Vanir</span> · CBSRM Desk</div>
+      <div class="small muted">Process over prediction</div>
+    </div>
+    <div class="tag" id="who"></div>
+  </header>
+
+  <!-- AUTH -->
+  <section id="auth" class="card center">
+    <h1 id="authTitle">Sign in</h1>
+    <p class="sub" id="authSub">Access the CBSRM systemic-risk terminal.</p>
+    <div id="nameWrap" class="hidden">
+      <label>Name</label>
+      <input id="name" autocomplete="name" placeholder="Jane Analyst" />
+    </div>
+    <label>Email</label>
+    <input id="email" type="email" autocomplete="email" placeholder="you@institution.org" />
+    <label>Password</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" />
+    <button class="btn" id="authBtn">Sign in</button>
+    <div class="err" id="authErr"></div>
+    <div class="switch" id="authSwitch">New here? <a id="toRegister">Create an account</a></div>
+  </section>
+
+  <!-- TERMINAL -->
+  <section id="terminal" class="hidden">
+    <div id="subBanner" class="banner hidden">
+      <div class="row">
+        <div>
+          <strong>No active Desk subscription.</strong>
+          <div class="small muted">Your account is created. Subscribe to unlock the live terminal.</div>
+        </div>
+        <div class="spacer"></div>
+        <a id="subLink" class="btn-ghost" style="display:inline-block" target="_blank" rel="noopener">Subscribe → $48k/yr</a>
+      </div>
+    </div>
+
+    <div class="row">
+      <h2 style="margin:0">Systemic-risk terminal</h2>
+      <span class="pill" id="planPill"></span>
+      <div class="spacer"></div>
+      <button class="btn-ghost" id="refreshBtn">Refresh</button>
+      <button class="btn-ghost" id="logoutBtn">Sign out</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="conditions">Conditions</div>
+      <div class="tab" data-tab="methodology">Methodology</div>
+      <div class="tab" data-tab="audit">Access ledger</div>
+    </div>
+
+    <div id="tab-conditions" class="tabpane card">
+      <div class="row small muted">
+        <span id="condMeta">Loading…</span>
+        <div class="spacer"></div>
+        <label style="margin:0">Source</label>
+        <select id="condSource" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px">
+          <option value="live">live</option>
+          <option value="demo">demo</option>
+        </select>
+      </div>
+      <div class="grid" id="condGrid"></div>
+    </div>
+
+    <div id="tab-methodology" class="tabpane card hidden">
+      <div class="small muted" id="methNote"></div>
+      <table id="methTable"><thead><tr><th>Lens</th><th>Family</th><th>Unit</th><th>Source</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div id="tab-audit" class="tabpane card hidden">
+      <div class="row">
+        <span class="small muted" id="auditMeta">Loading…</span>
+        <div class="spacer"></div>
+        <span class="pill" id="chainPill"></span>
+      </div>
+      <table id="auditTable"><thead><tr><th>#</th><th>When (UTC)</th><th>Event</th><th>Route</th><th>Entry hash</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const store = {
+  get a(){return localStorage.getItem("cbsrm_access")},
+  get r(){return localStorage.getItem("cbsrm_refresh")},
+  set(a,r){localStorage.setItem("cbsrm_access",a);if(r)localStorage.setItem("cbsrm_refresh",r)},
+  clear(){localStorage.removeItem("cbsrm_access");localStorage.removeItem("cbsrm_refresh")}
+};
+let mode = "login";
+
+async function api(path, {method="GET", body, auth=true} = {}){
+  const headers = {"Content-Type":"application/json"};
+  if(auth && store.a) headers["Authorization"] = "Bearer " + store.a;
+  let res = await fetch(path, {method, headers, body: body?JSON.stringify(body):undefined});
+  if(res.status === 401 && auth && store.r){
+    const ok = await tryRefresh();
+    if(ok){ headers["Authorization"]="Bearer "+store.a;
+      res = await fetch(path, {method, headers, body: body?JSON.stringify(body):undefined}); }
+  }
+  return res;
+}
+async function tryRefresh(){
+  try{
+    const res = await fetch("/auth/refresh",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({refresh_token: store.r})});
+    if(!res.ok) return false;
+    const j = await res.json(); store.set(j.access_token, j.refresh_token); return true;
+  }catch(e){ return false; }
+}
+
+// ---- auth UI ----
+$("toRegister").onclick = () => setMode(mode==="login"?"register":"login");
+function setMode(m){
+  mode = m;
+  $("authTitle").textContent = m==="login" ? "Sign in" : "Create your account";
+  $("authBtn").textContent  = m==="login" ? "Sign in" : "Create account";
+  $("nameWrap").classList.toggle("hidden", m!=="register");
+  $("authSwitch").innerHTML = m==="login"
+    ? 'New here? <a id="toRegister">Create an account</a>'
+    : 'Have an account? <a id="toRegister">Sign in</a>';
+  $("toRegister").onclick = () => setMode(mode==="login"?"register":"login");
+  $("authErr").textContent = "";
+}
+$("authBtn").onclick = async () => {
+  const email = $("email").value.trim(), password = $("password").value, name = $("name").value.trim();
+  $("authErr").textContent = ""; $("authBtn").disabled = true;
+  try{
+    const path = mode==="login" ? "/auth/login" : "/auth/register";
+    const res = await api(path, {method:"POST", auth:false, body: mode==="login"?{email,password}:{email,password,name}});
+    const j = await res.json().catch(()=>({}));
+    if(!res.ok){ $("authErr").textContent = errText(j) || ("HTTP "+res.status); return; }
+    store.set(j.access_token, j.refresh_token);
+    enterTerminal(j.user);
+  }catch(e){ $("authErr").textContent = "Network error."; }
+  finally{ $("authBtn").disabled = false; }
+};
+function errText(j){
+  if(!j) return ""; const d=j.detail;
+  if(typeof d==="string") return d;
+  if(Array.isArray(d)) return d.map(x=>x.msg).join("; ");
+  if(d&&d.error) return d.error.replaceAll("_"," ");
+  return "";
+}
+
+// ---- terminal ----
+function show(el){ ["auth","terminal"].forEach(id=>$(id).classList.toggle("hidden", id!==el)); }
+function enterTerminal(user){
+  show("terminal");
+  $("who").textContent = user.email;
+  $("planPill").textContent = user.plan + " · " + user.status;
+  $("planPill").className = "pill " + (user.has_terminal?"ok":"no");
+  const entitled = !!user.has_terminal;
+  $("subBanner").classList.toggle("hidden", entitled);
+  $("subLink").href = "https://buy.stripe.com/6oU00iawt5DkezAbJ3g7e00"
+    + "?client_reference_id=" + encodeURIComponent(user.id);
+  if(entitled){ loadConditions(); }
+}
+$("logoutBtn").onclick = () => { store.clear(); show("auth"); $("password").value=""; };
+$("refreshBtn").onclick = () => activate(currentTab());
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => activate(t.dataset.tab));
+function currentTab(){ return document.querySelector(".tab.active").dataset.tab; }
+function activate(name){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===name));
+  document.querySelectorAll(".tabpane").forEach(p=>p.classList.add("hidden"));
+  $("tab-"+name).classList.remove("hidden");
+  if(name==="conditions") loadConditions();
+  if(name==="methodology") loadMethodology();
+  if(name==="audit") loadAudit();
+}
+$("condSource").onchange = loadConditions;
+
+function fmtVal(rd){
+  if(rd.state) return rd.state.replaceAll("_"," ");
+  if(typeof rd.value!=="number") return "—";
+  if(rd.fmt==="probability") return Math.round(rd.value*100)+"%";
+  if(rd.fmt==="bps") return Math.round(rd.value)+" bps";
+  if(rd.fmt==="ratio") return rd.value.toFixed(3);
+  return rd.value.toFixed(2);
+}
+async function loadConditions(){
+  $("condGrid").innerHTML=""; $("condMeta").textContent="Loading…";
+  const res = await api("/v1/desk/conditions?source="+$("condSource").value);
+  if(res.status===403){ return gateLost(); }
+  const j = await res.json();
+  $("condMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
+  $("condGrid").innerHTML = j.readings.map(rd => rd.status==="ok"
+    ? `<div class="lens"><div class="k">${rd.label}</div><div class="v">${fmtVal(rd)}</div>
+        <div class="m">${rd.source}${rd.as_of?" · "+rd.as_of:""}</div></div>`
+    : `<div class="lens bad"><div class="k">${rd.label}</div><div class="v">unavailable</div>
+        <div class="m">${rd.source}</div></div>`).join("");
+}
+async function loadMethodology(){
+  const res = await api("/v1/desk/methodology"); if(res.status===403) return gateLost();
+  const j = await res.json(); $("methNote").textContent = j.note;
+  $("methTable").querySelector("tbody").innerHTML = j.lenses.map(l =>
+    `<tr><td>${l.label}</td><td>${l.lens}</td><td>${l.unit}</td><td>${l.source}</td></tr>`).join("");
+}
+async function loadAudit(){
+  const res = await api("/v1/desk/audit/export"); if(res.status===403) return gateLost();
+  const j = await res.json();
+  $("auditMeta").textContent = j.count+" events for "+j.subject;
+  $("chainPill").textContent = j.chain_ok ? "chain verified ✓" : "chain BROKEN";
+  $("chainPill").className = "pill " + (j.chain_ok?"ok":"no");
+  $("auditTable").querySelector("tbody").innerHTML = j.events.slice().reverse().map(e =>
+    `<tr><td>${e.id}</td><td class="mono">${e.ts}</td><td>${e.kind}</td>
+      <td class="mono small">${e.route||"—"}</td><td class="mono hash">${e.entry_hash.slice(0,16)}…</td></tr>`).join("");
+}
+function gateLost(){ $("subBanner").classList.remove("hidden"); }
+
+// ---- boot ----
+(async function boot(){
+  if(store.a){
+    const res = await api("/auth/me");
+    if(res.ok){ enterTerminal(await res.json()); return; }
+    store.clear();
+  }
+  setMode("login"); show("auth");
+})();
+</script>
+</body>
+</html>

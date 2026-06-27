@@ -34,6 +34,7 @@ from wavervanir_api.auth import (
 from wavervanir_api.config import Settings, get_settings
 from wavervanir_api.db import OnboardSession, get_engine
 from wavervanir_api.plans import is_known_plan
+from wavervanir_api.users import AuthService
 
 router = APIRouter()
 
@@ -85,6 +86,19 @@ def _handle_checkout_completed(event: dict, settings: Settings) -> dict:
         plan = "researcher"
     tier = "paid" if plan != "free" else "free"
 
+    # Desk terminal: link the checkout to a pre-registered user. The terminal
+    # passes ``client_reference_id`` (the user id) when redirecting to the
+    # Payment Link, so a paid checkout flips that user's entitlement to active.
+    # Idempotent (``set_entitlement`` writes the same values on replay).
+    client_ref = data_obj.get("client_reference_id")
+    synced_user = AuthService(settings).entitle_from_checkout(
+        client_reference_id=client_ref,
+        plan=plan,
+        stripe_customer_id=customer_id,
+        stripe_subscription_id=subscription_id,
+    )
+    user_entitled_id = synced_user.id if synced_user else None
+
     # Idempotency: replay on same Stripe session id must NOT mint a new key.
     existing = _existing_onboard(settings, session_id) if session_id else None
     if existing is not None:
@@ -93,6 +107,7 @@ def _handle_checkout_completed(event: dict, settings: Settings) -> dict:
             "idempotent": True,
             "api_key_id": existing.api_key_id,
             "plan": existing.plan,
+            "user_entitled_id": user_entitled_id,
             "stripe_session_id": session_id,
         }
 
@@ -124,6 +139,7 @@ def _handle_checkout_completed(event: dict, settings: Settings) -> dict:
         "api_key_id": row.id,
         "plan": row.plan,
         "tier": row.tier,
+        "user_entitled_id": user_entitled_id,
         "stripe_customer_id": customer_id,
         "stripe_subscription_id": subscription_id,
         "stripe_session_id": session_id,
@@ -145,9 +161,13 @@ def _handle_subscription_updated(event: dict, settings: Settings) -> dict:
         plan=plan,
         settings=settings,
     )
+    users_synced = AuthService(settings).update_entitlement_by_subscription(
+        stripe_subscription_id=subscription_id, plan=plan, status_="active"
+    )
     return {
         "handled": "customer.subscription.updated",
         "updated_rows": updated,
+        "users_synced": users_synced,
         "plan": plan,
         "stripe_subscription_id": subscription_id,
     }
@@ -159,7 +179,8 @@ def _handle_subscription_deleted(event: dict, settings: Settings) -> dict:
     if not customer_id:
         return {"handled": event.get("type", ""), "revoked": 0}
     revoked = revoke_key_by_stripe_customer(customer_id, settings)
-    return {"handled": event.get("type", ""), "revoked": revoked}
+    users_revoked = AuthService(settings).revoke_by_customer(stripe_customer_id=customer_id)
+    return {"handled": event.get("type", ""), "revoked": revoked, "users_revoked": users_revoked}
 
 
 def _handle_payment_failed(event: dict, settings: Settings) -> dict:
@@ -173,9 +194,13 @@ def _handle_payment_failed(event: dict, settings: Settings) -> dict:
         grace_until=deadline,
         settings=settings,
     )
+    users_grace = AuthService(settings).grace_by_subscription(
+        stripe_subscription_id=subscription_id, grace_until=deadline
+    )
     return {
         "handled": "invoice.payment_failed",
         "updated_rows": updated,
+        "users_grace": users_grace,
         "grace_until": deadline.isoformat(),
     }
 

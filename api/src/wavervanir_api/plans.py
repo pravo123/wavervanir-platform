@@ -66,10 +66,30 @@ PLAN_REGULATOR = Plan(
     description="Regulator / central-bank — bespoke engagement.",
 )
 
+PLAN_DESK = Plan(
+    name="desk",
+    daily_cap=50_000,
+    price_env="STRIPE_PRICE_DESK",
+    public_checkout=True,    # sold via the Stripe Payment Link on cbsrm.wavervanir.com
+    sales_assisted=True,     # high-touch institutional onboarding alongside self-serve
+    description=(
+        "CBSRM Desk — $48,000/yr. Authenticated terminal: live systemic-risk "
+        "conditions, any-quarter history, and verifiable PipelineRecords with a "
+        "tamper-evident access ledger."
+    ),
+)
+
 
 _PLANS: dict[str, Plan] = {
     p.name: p
-    for p in (PLAN_FREE, PLAN_RESEARCHER, PLAN_PRO, PLAN_INSTITUTIONAL, PLAN_REGULATOR)
+    for p in (
+        PLAN_FREE,
+        PLAN_RESEARCHER,
+        PLAN_PRO,
+        PLAN_INSTITUTIONAL,
+        PLAN_REGULATOR,
+        PLAN_DESK,
+    )
 }
 
 

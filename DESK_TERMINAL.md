@@ -1,0 +1,92 @@
+# CBSRM Desk — paid-customer terminal
+
+The authenticated terminal that an institution logs into after subscribing to the
+**Desk** tier ($48,000/yr). It extends the existing `wavervanir-platform` API with
+a user sign-in layer, an entitlement gate, premium data routes, and a
+tamper-evident access ledger — and serves a single-page terminal UI. The public
+Apache-2.0 `cbsrm` package is untouched.
+
+## What it adds
+
+| Area | Module | Notes |
+|------|--------|-------|
+| Sign-in class | `users.py` (`AuthService`) | register / login / refresh / token resolution / entitlement |
+| Password + JWT | `security.py` | stdlib **scrypt** (argon2id-class) + stdlib **HS256 JWT** — zero new deps |
+| Tamper-evident ledger | `access_audit.py` (`AccessEvent`) | SHA-256 hash-linked, portable across SQLite + Postgres |
+| Auth routes | `routes/users.py` | `POST /auth/register\|login\|refresh`, `GET /auth/me` |
+| Gated routes | `routes/desk.py` | `GET /v1/desk/whoami\|status\|methodology\|conditions\|audit/export` behind `require_desk` |
+| Entitlement | `db.py` (`User`), `plans.py` (`desk`) | default-deny: `plan ∈ {desk,institutional,regulator}` and `status ∈ {active,grace}` |
+| Terminal UI | `web/index.html` | served same-origin at `/app` (no CORS) |
+| Billing sync | `routes/stripe.py` | checkout → active, payment_failed → grace, subscription deleted → revoked |
+
+## Access model
+
+`www.wavervanir.com`'s **Sign In** is a hub that branches to two products —
+**VolanX** (`volanx.wavervanir.com`) and **CBSRM** (`cbsrm.wavervanir.com`). The
+Desk keeps its own institutional accounts with the same email→password→JWT
+experience; it is not coupled to the retail VolanX account pool.
+
+## Environment
+
+| Var | Source | Purpose |
+|-----|--------|---------|
+| `WAVERVANIR_JWT_SECRET` | Render `generateValue` | signs access/refresh JWTs (rotate off the dev sentinel before serving real users) |
+| `WAVERVANIR_API_KEY_PEPPER` | Render `generateValue` | existing API-key pepper |
+| `WAVERVANIR_DB_URL` | Render Postgres | dev defaults to SQLite |
+| `STRIPE_API_KEY` / `STRIPE_WEBHOOK_SECRET` | operator | Stripe (test mode in MVP) |
+| `STRIPE_PRICE_DESK` | operator | Stripe Price id for the $48k/yr Desk |
+| `FRED_API_KEY` | operator (optional) | enables the FRED lenses in `/v1/desk/conditions?source=live` |
+| `WAVERVANIR_ACCESS_TTL_MIN` / `WAVERVANIR_REFRESH_TTL_DAYS` | optional | default 15 min / 7 days |
+
+## Stripe Payment Link wiring (the one operator detail that matters)
+
+For a paid checkout to entitle the right account, the Desk Payment Link must:
+1. carry **`metadata.plan = desk`** on its Price (so the webhook sets `plan=desk`), and
+2. receive **`client_reference_id`** = the user's id. The terminal already appends
+   this: the "Subscribe → $48k/yr" button links to
+   `https://buy.stripe.com/…?client_reference_id=<user_id>`.
+
+On `checkout.session.completed` the webhook calls
+`AuthService.entitle_from_checkout(...)` → the user flips to `desk / active`.
+
+## Run locally
+
+```bash
+cd api
+pip install -e .
+uvicorn wavervanir_api.app:create_app --factory --reload
+# terminal UI:  http://127.0.0.1:8000/app/
+# API docs:     http://127.0.0.1:8000/docs
+pytest -q            # 136 passing
+```
+
+## Verify the gate end-to-end
+
+```
+register → 201 (plan=free, status=inactive)
+GET /v1/desk/whoami        → 403  desk_subscription_required   (default-deny)
+# simulate Stripe checkout.session.completed (client_reference_id=user id, metadata.plan=desk)
+GET /v1/desk/whoami        → 200  terminal_access=true
+GET /v1/desk/audit/export  → chain_ok=true   (sign-in + every access hash-linked)
+```
+
+## Operator follow-ups (not code)
+
+1. **Render** — Apply the Blueprint, paste `STRIPE_*` + `FRED_API_KEY`; Render
+   generates `WAVERVANIR_JWT_SECRET`.
+2. **Stripe** — confirm the Desk Payment Link/Price has `metadata.plan=desk`, and
+   register the webhook endpoint (`/stripe/webhook`) to obtain `STRIPE_WEBHOOK_SECRET`.
+   Verify the link is in **Live** mode before inviting real institutions.
+3. **WordPress hub** (`www.wavervanir.com`, Bluehost) — make **Sign In** a 2-way
+   chooser: VolanX (`volanx.wavervanir.com/login`) | CBSRM (`<api>/app/`). Drive
+   via the shared browser; the operator logs in (no credentials handled in chat).
+
+## Known limits (MVP)
+
+- `source=live` conditions call upstream providers synchronously (per-lens 6 s
+  timeout); for high traffic, front it with the daily-snapshot cache pattern the
+  public site uses.
+- The hash-linked ledger serializes appends with a process lock (single-worker
+  correct); multi-worker deployments need a DB-level sequence.
+- Verifiable `PipelineRecord` routes are deferred until `cbsrm.composer` is
+  published to the pinned tag.
