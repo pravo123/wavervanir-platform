@@ -8,7 +8,7 @@ from typing import Literal, Protocol, runtime_checkable
 from wavervanir_api.schemas import FlowSnapshot, MarketSnapshot
 
 
-ProviderName = Literal["demo", "fmp", "financialdata", "bullflow", "broker_snapshot"]
+ProviderName = Literal["demo", "financialdata", "bullflow", "broker_snapshot"]
 
 
 class ProviderUnavailableError(RuntimeError):

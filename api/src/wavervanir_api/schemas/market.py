@@ -1,4 +1,4 @@
-"""Reference/market-data snapshot — what FMP-style providers emit."""
+"""Reference/market-data snapshot — what by-symbol market providers emit."""
 
 from __future__ import annotations
 

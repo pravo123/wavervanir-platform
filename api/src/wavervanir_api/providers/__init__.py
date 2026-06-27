@@ -3,7 +3,7 @@
 Four provider kinds:
 
   ``demo``             — deterministic fixture data; no network
-  ``fmp``              — Financial Modeling Prep adapter; env-gated; offline in tests
+  ``financialdata``    — financialdata.net adapter (the commercial market feed)
   ``bullflow``         — Bullflow flow/sentiment adapter; env OR file; offline in tests
   ``broker_snapshot``  — file-only validator + risk aggregator for sanitized
                           broker exports (NEVER a direct broker SDK)
@@ -23,7 +23,6 @@ from wavervanir_api.providers.base import (
     ProviderUnavailableError,
 )
 from wavervanir_api.providers.demo import DemoProvider
-from wavervanir_api.providers.fmp import FmpProvider
 from wavervanir_api.providers.financialdata import FinancialDataProvider
 from wavervanir_api.providers.bullflow import BullflowProvider
 
@@ -33,7 +32,6 @@ __all__ = [
     "ProviderName",
     "ProviderUnavailableError",
     "DemoProvider",
-    "FmpProvider",
     "FinancialDataProvider",
     "BullflowProvider",
     "list_providers",
@@ -45,7 +43,6 @@ def list_providers(settings) -> list[ProviderStatus]:
     """Return the status of every registered provider."""
     return [
         DemoProvider().status(settings),
-        FmpProvider().status(settings),
         FinancialDataProvider().status(settings),
         BullflowProvider().status(settings),
         # broker_snapshot is intentionally NOT here — it is not a fetch-by-symbol
@@ -65,10 +62,8 @@ def get_provider(name: str) -> DataProvider:
     name = (name or "").lower()
     if name == "demo":
         return DemoProvider()
-    if name == "fmp":
-        return FmpProvider()
     if name == "financialdata":
         return FinancialDataProvider()
     if name == "bullflow":
         return BullflowProvider()
-    raise KeyError(f"unknown provider: {name!r}; expected one of demo|fmp|financialdata|bullflow")
+    raise KeyError(f"unknown provider: {name!r}; expected one of demo|financialdata|bullflow")

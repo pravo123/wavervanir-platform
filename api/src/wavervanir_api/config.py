@@ -69,7 +69,6 @@ class Settings(BaseSettings):
     )
 
     # ── data-provider env (all OPTIONAL — providers self-disable when blank) ──
-    fmp_api_key: str = Field(default="", alias="FMP_API_KEY")
     bullflow_api_key: str = Field(default="", alias="BULLFLOW_API_KEY")
     bullflow_data_file: str = Field(default="", alias="BULLFLOW_DATA_FILE")
     financialdata_api_key: str = Field(default="", alias="FINANCIALDATA_API_KEY")

@@ -38,7 +38,7 @@ def providers(
 @router.get("/data/snapshot/{symbol}")
 def snapshot(
     symbol: str,
-    provider: str = Query(default="demo", description="demo|fmp|financialdata|bullflow"),
+    provider: str = Query(default="demo", description="demo|financialdata|bullflow"),
     kind: str = Query(default="market", description="market|flow"),
     settings: Settings = Depends(get_settings),
     _auth: AuthContext = Depends(require_api_key),

@@ -91,7 +91,7 @@ class BullflowProvider:
     def fetch_market(self, symbol: str, settings, *, client: Any = None) -> MarketSnapshot:
         # Bullflow is flow-only, not a quotes provider.
         raise ProviderUnavailableError(
-            "bullflow provider does not supply quote data; use fmp or demo"
+            "bullflow provider does not supply quote data; use financialdata or demo"
         )
 
 
