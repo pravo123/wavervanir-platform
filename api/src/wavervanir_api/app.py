@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from wavervanir_api import __version__
@@ -60,5 +61,10 @@ def create_app() -> FastAPI:
     web_dir = Path(__file__).resolve().parent / "web"
     if web_dir.is_dir():
         app.mount("/app", StaticFiles(directory=str(web_dir), html=True), name="terminal")
+
+        # A bare visit to "/" lands on the terminal, not a raw 404.
+        @app.get("/", include_in_schema=False)
+        def _root() -> RedirectResponse:
+            return RedirectResponse(url="/app/")
 
     return app
