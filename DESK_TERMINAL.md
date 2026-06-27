@@ -16,6 +16,7 @@ Apache-2.0 `cbsrm` package is untouched.
 | Auth routes | `routes/users.py` | `POST /auth/register\|login\|refresh`, `GET /auth/me` |
 | Gated routes | `routes/desk.py` | `GET /v1/desk/whoami\|status\|methodology\|conditions\|lens/{id}\|audit/export` behind `require_desk` |
 | BI analytics | `desk_analytics.py` | per-lens history + stats (min/max/mean/percentile/z) + regime bands; `GET /v1/desk/lens/{id}` |
+| Advanced lenses | `desk_lenses.py` | from financialdata.net: **Diebold-Yilmaz cross-border spillover** (real VAR + generalized FEVD), options put/call vega skew, fund redemption pressure (real flows), ESG/climate transition risk |
 | Entitlement | `db.py` (`User`), `plans.py` (`desk`) | default-deny: `plan ∈ {desk,institutional,regulator}` and `status ∈ {active,grace}` |
 | Terminal UI | `web/index.html` | served same-origin at `/app` (no CORS) |
 | Billing sync | `routes/stripe.py` | checkout → active, payment_failed → grace, subscription deleted → revoked |

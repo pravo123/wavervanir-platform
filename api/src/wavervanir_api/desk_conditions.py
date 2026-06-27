@@ -19,6 +19,7 @@ import json
 import threading
 from typing import Any, Callable, Optional
 
+from wavervanir_api import desk_lenses
 from wavervanir_api.audit import sha256_of_obj
 
 SCHEMA = "cbsrm-desk-conditions/1.0.0"
@@ -205,6 +206,7 @@ def build(*, source: str = "live", generated_at_utc: Optional[str] = None, setti
     if source == "demo":
         readings = [_demo_reading(s) for s in specs]
         readings.append(_equity_stress_demo())
+        readings.extend(desk_lenses.conditions_readings(None, source="demo"))
         disclaimer = ("DEMONSTRATION readings — synthetic, not live market data. "
                       "Use source=live for current public readings.")
     else:
@@ -219,8 +221,11 @@ def build(*, source: str = "live", generated_at_utc: Optional[str] = None, setti
         if settings is not None:
             fd = _call_with_timeout(lambda: _equity_stress_live(settings), LIVE_LENS_TIMEOUT_S)
             readings.append(fd if fd is not None else _fd_unavailable("upstream timeout"))
+            readings.extend(desk_lenses.conditions_readings(settings, source="live"))
         else:
             readings.append(_fd_unavailable("FINANCIALDATA_API_KEY not configured"))
+            for _nid in desk_lenses.NEW_LENS_IDS:
+                readings.append(desk_lenses._unavailable(_nid, "FINANCIALDATA_API_KEY not configured"))
         disclaimer = ("Latest available public readings, each dated to its provider's "
                       "last publication. Risk measurement — not investment advice.")
     ok = [r for r in readings if r.get("status") == "ok"]
@@ -249,5 +254,11 @@ def methodology() -> dict:
         ] + [
             {"id": _FD_LENS["id"], "label": _FD_LENS["label"], "lens": _FD_LENS["lens"],
              "unit": _FD_LENS["unit"], "source": _FD_LENS["source"]}
+        ] + [
+            {"id": i, "label": desk_lenses.NEW_LENS_META[i]["label"],
+             "lens": desk_lenses.NEW_LENS_META[i]["lens"],
+             "unit": desk_lenses.NEW_LENS_META[i]["unit"],
+             "source": desk_lenses.NEW_LENS_META[i]["source"]}
+            for i in desk_lenses.NEW_LENS_IDS
         ],
     }

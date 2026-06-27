@@ -34,9 +34,10 @@ def test_demo_series_is_deterministic():
 
 
 def test_every_lens_has_metadata():
-    # 8 cbsrm lenses + the financialdata VIX lens.
-    assert len(desk_analytics.LENS_META) == 9
+    # 8 cbsrm lenses + VIX + 4 advanced financialdata lenses.
+    assert len(desk_analytics.LENS_META) == 13
     assert "EQUITY-VIX" in desk_analytics.LENS_META
+    assert "XBORDER-DY" in desk_analytics.LENS_META
     assert desk_analytics.LENS_META["EQUITY-VIX"]["source"] == "financialdata.net"
 
 

@@ -21,6 +21,7 @@ from __future__ import annotations
 import math
 from typing import Optional
 
+from wavervanir_api import desk_lenses
 from wavervanir_api.audit import sha256_of_obj
 from wavervanir_api.desk_conditions import (
     _FD_LENS,
@@ -63,6 +64,9 @@ def _build_meta() -> dict[str, dict]:
     meta[_FD_LENS["id"]] = {"label": _FD_LENS["label"], "fmt": "level",
                             "unit": _FD_LENS["unit"], "source": _FD_LENS["source"],
                             "bands": _BANDS.get("EQUITY-VIX", [])}
+    for nid, m in desk_lenses.NEW_LENS_META.items():
+        meta[nid] = {"label": m["label"], "fmt": m["fmt"], "unit": m["unit"],
+                     "source": m["source"], "bands": m["bands"]}
     return meta
 
 
@@ -92,6 +96,8 @@ def _monthly_labels(n: int, end_year: int = 2026, end_month: int = 6) -> list[st
 
 
 def _demo_series(lens_id: str) -> list[dict]:
+    if lens_id in desk_lenses.NEW_LENS_IDS:
+        return desk_lenses.demo_series(lens_id, _monthly_labels(24))
     cur = _DEMO_CURRENT.get(lens_id)
     if cur is None:
         return []
@@ -171,6 +177,8 @@ def _cbsrm_series(lens_id: str) -> list[dict]:
 
 def _live_series(settings, lens_id: str) -> list[dict]:
     try:
+        if lens_id in desk_lenses.NEW_LENS_IDS:
+            return desk_lenses.live_series(settings, lens_id)
         if lens_id == "EQUITY-VIX":
             return _vix_series(settings)
         return _cbsrm_series(lens_id)
