@@ -1,10 +1,12 @@
 """Premium CBSRM Desk routes — gated by an active Desk subscription.
 
-Increment 1 ships the entitlement-gated namespace with identity, status, and a
-self-service audit-trail export — proving the default-deny gate and the
-tamper-evident access ledger end-to-end. The data-rich routes (live conditions,
-any-quarter history, verifiable PipelineRecords) land in increment 3 on the same
-``require_desk`` gate.
+Every route is behind the default-deny ``require_desk`` gate and writes to the
+tamper-evident access ledger. The namespace covers identity/status, the live
+systemic-risk conditions + per-lens BI analytics, the portfolio risk analyzer,
+the self-service audit-trail export, and the **governed PipelineRecords**
+(deterministic, content-addressed, reproducible records of the CBSRM
+macro-composite pipeline for crisis windows) — the literal "Governed
+PipelineRecord + audit-chain access" the Desk tier sells.
 """
 
 from __future__ import annotations
@@ -13,8 +15,13 @@ import datetime as _dt
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from wavervanir_api import desk_analytics, desk_conditions
-from wavervanir_api.access_audit import export_subject, verify_access_chain
+from wavervanir_api import desk_analytics, desk_conditions, desk_pipeline
+from wavervanir_api.access_audit import (
+    AccessKind,
+    append_access_event,
+    export_subject,
+    verify_access_chain,
+)
 from wavervanir_api.config import Settings, get_settings
 from wavervanir_api.users import UserContext, require_desk
 
@@ -95,6 +102,73 @@ def lens_analytics(
             detail={"error": "unknown_lens", "lens_id": lens_id},
         )
     return desk_analytics.lens_analytics(settings, lens_id, source=source)
+
+
+# ── Governed PipelineRecord ─────────────────────────────────────────────────
+# Delivers the pricing promise "Governed PipelineRecord + audit-chain access":
+# deterministic, content-addressed, version-stamped records of the CBSRM
+# macro-composite pipeline for crisis windows. Rebuild any record to verify it
+# reproduces to the same SHA-256 — that, plus the audit-chained access, is the
+# governance guarantee. (catalog/verify are declared before /{window_id} so the
+# static paths win over the parameterised route.)
+
+@router.get("/desk/pipeline/catalog")
+def pipeline_catalog(ctx: UserContext = Depends(require_desk)) -> dict:
+    """Which governed windows can be reproduced, and the versions that govern them."""
+    return desk_pipeline.catalog()
+
+
+@router.post("/desk/pipeline/verify")
+async def pipeline_verify(
+    request: Request,
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """Rebuild a governed record and check it reproduces (optionally vs an expected hash).
+
+    The verification result — including the manifest's ``output_sha256`` — is
+    written to the caller's tamper-evident access ledger, so the governed record
+    and the audit chain are linked end to end.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    window_id = (body or {}).get("window_id", "")
+    expected = (body or {}).get("expected_output_sha256")
+    try:
+        result = desk_pipeline.verify_record(window_id, expected)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "unknown_window", "window_id": window_id,
+                    "supported": desk_pipeline.available_windows()},
+        )
+    append_access_event(
+        settings=settings,
+        subject=f"user:{ctx.user_id}",
+        kind=AccessKind.ACCESS_GRANTED,
+        route=f"desk/pipeline/verify:{window_id}",
+        payload={"output_sha256": result["output_sha256"],
+                 "reproduced": result["reproduced"]},
+    )
+    return result
+
+
+@router.get("/desk/pipeline/{window_id}")
+def pipeline_record(
+    window_id: str,
+    ctx: UserContext = Depends(require_desk),
+) -> dict:
+    """The governed PipelineRecord for one crisis window — report + manifest."""
+    try:
+        return desk_pipeline.build_record(window_id, generated_at_utc=_utc_stamp())
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "unknown_window", "window_id": window_id,
+                    "supported": desk_pipeline.available_windows()},
+        )
 
 
 # A sanitized sample portfolio (no account numbers/tokens) for the terminal's

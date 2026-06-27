@@ -122,6 +122,7 @@
       <div class="tab" data-tab="methodology">Methodology</div>
       <div class="tab" data-tab="audit">Access ledger</div>
       <div class="tab" data-tab="portfolio">Portfolio</div>
+      <div class="tab" data-tab="pipeline">Pipeline</div>
       <div class="tab hidden" data-tab="admin" id="adminTab">Admin</div>
     </div>
 
@@ -186,6 +187,18 @@
         <span class="small" id="pfMsg"></span>
       </div>
       <div id="pfResult" style="margin-top:14px"></div>
+    </div>
+
+    <div id="tab-pipeline" class="tabpane card hidden">
+      <div class="small muted" id="plNote">Governed, reproducible records of the CBSRM macro-composite pipeline for crisis windows — each content-addressed and verifiable.</div>
+      <div class="row" style="gap:8px;margin-top:10px;align-items:center">
+        <label style="margin:0">Window</label>
+        <select id="plWindow" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px"></select>
+        <button class="btn-ghost" id="plBuild">Build governed record</button>
+        <button class="btn-ghost" id="plVerify">Verify reproducibility</button>
+        <span class="small" id="plMsg"></span>
+      </div>
+      <div id="plResult" style="margin-top:14px"></div>
     </div>
 
     <div id="tab-admin" class="tabpane card hidden">
@@ -305,6 +318,7 @@ function clearPanes(){
   $("auditTable").querySelector("tbody").innerHTML="";
   $("adminUsers").querySelector("tbody").innerHTML=""; $("adminMeta").textContent=""; $("adminMsg").textContent="";
   $("pfInput").value=""; $("pfResult").innerHTML=""; $("pfMsg").textContent="";
+  $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent=""; $("plWindow").innerHTML="";
 }
 $("logoutBtn").onclick = () => { store.clear(); clearPanes(); show("auth"); $("password").value=""; };
 $("refreshBtn").onclick = () => activate(currentTab());
@@ -317,6 +331,7 @@ function activate(name){
   if(name==="conditions") loadConditions();
   if(name==="methodology") loadMethodology();
   if(name==="audit") loadAudit();
+  if(name==="pipeline") loadPipeline();
   if(name==="admin") loadAdmin();
 }
 $("condSource").onchange = loadConditions;
@@ -428,6 +443,62 @@ function openMethodology(id){
   p.scrollIntoView({block:"nearest"});
 }
 $("mpClose").onclick = () => $("methPanel").classList.add("hidden");
+// ---- governed PipelineRecord ----
+async function loadPipeline(){
+  $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent="";
+  const res = await api("/v1/desk/pipeline/catalog");
+  if(res.status===403){ $("plNote").textContent="Subscribe to unlock governed PipelineRecords."; $("plWindow").innerHTML=""; return gateLost(); }
+  if(!res.ok){ $("plMsg").textContent="Catalog unavailable."; return; }
+  const j = await res.json();
+  $("plWindow").innerHTML = (j.windows||[]).map(w =>
+    `<option value="${escHtml(w.window_id)}">${escHtml(w.window_id)} — ${escHtml(w.label)}</option>`).join("");
+  const v = j.versions||{};
+  $("plNote").textContent = (j.note||"") + "  ·  cbsrm "+v.cbsrm+" · manifest "+v.manifest+" · registry "+v.registry;
+}
+function plFeatures(feat){
+  const rows = Object.entries(feat||{}).map(([k,val]) =>
+    `<tr><td>${escHtml(k)}</td><td style="text-align:right">${typeof val==='number'?val.toFixed(2):escHtml(val)}</td></tr>`).join("");
+  return `<table style="margin-top:6px"><thead><tr><th>Feature</th><th style="text-align:right">z-score</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+async function buildPipeline(){
+  const w = $("plWindow").value; if(!w) return;
+  $("plMsg").textContent="Building…"; $("plResult").innerHTML=""; $("plResult").dataset.sha="";
+  const res = await api("/v1/desk/pipeline/"+encodeURIComponent(w));
+  if(res.status===403) return gateLost();
+  if(!res.ok){ $("plMsg").textContent="Record unavailable."; return; }
+  const j = await res.json(); $("plMsg").textContent="";
+  const m = j.manifest||{}, h = m.hashes||{};
+  const drivers = (j.dominant_drivers||[]).map(d=>`<code>${escHtml(d)}</code>`).join(" ");
+  $("plResult").dataset.sha = h.output_sha256||"";
+  $("plResult").innerHTML =
+    `<div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2)">
+       <div class="row"><strong>${escHtml(j.title||w)}</strong><div class="spacer"></div><span class="pill">${escHtml(j.phase||"")}</span></div>
+       <div class="small muted" style="margin-top:2px">${escHtml(j.window_label||"")} · score ${j.phase_score!=null?Number(j.phase_score).toFixed(3):"—"} · posture ${escHtml(j.risk_posture||"—")}</div>
+       <div style="margin-top:12px"><div class="small muted">Governed manifest · content-addressed · reproducible</div>
+         <div class="small" style="font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:4px;line-height:1.7">
+           report <code>${escHtml(m.report_id||"")}</code> · manifest v${escHtml(m.manifest_version||"")}<br>
+           output_sha256 &nbsp;<code>${escHtml(h.output_sha256||"")}</code><br>
+           payload_sha256 <code>${escHtml(h.payload_sha256||"")}</code></div></div>
+       <div style="margin-top:12px"><div class="small muted">Dominant drivers</div><div style="margin-top:4px">${drivers||"—"}</div></div>
+       ${plFeatures(j.phase_features)}
+     </div>`;
+}
+async function verifyPipeline(){
+  const w = $("plWindow").value; if(!w) return;
+  $("plMsg").textContent="Verifying…";
+  const expected = $("plResult").dataset.sha;
+  const body = expected ? {window_id:w, expected_output_sha256:expected} : {window_id:w};
+  const res = await api("/v1/desk/pipeline/verify",{method:"POST", body});
+  if(res.status===403) return gateLost();
+  if(!res.ok){ $("plMsg").textContent="Verify failed."; return; }
+  const j = await res.json();
+  const ok = j.reproduced && j.deterministic;
+  $("plMsg").innerHTML = ok
+    ? '<span style="color:var(--good,#3fb950)">✓ Reproduced — output_sha256 matches, deterministic rebuild confirmed (logged to your access ledger)</span>'
+    : '<span style="color:var(--bad,#f85149)">✗ Mismatch — record did not reproduce</span>';
+}
+$("plBuild").onclick = buildPipeline;
+$("plVerify").onclick = verifyPipeline;
 async function loadAudit(){
   const res = await api("/v1/desk/audit/export");
   if(res.status===403){ $("auditMeta").textContent="Subscribe to unlock the access ledger."; $("chainPill").textContent=""; $("chainPill").className="pill"; $("auditTable").querySelector("tbody").innerHTML=""; return gateLost(); }
