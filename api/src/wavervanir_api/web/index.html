@@ -154,6 +154,7 @@
       <div class="tab" data-tab="pipeline">Pipeline</div>
       <div class="tab" data-tab="portfolio">Portfolio</div>
       <div class="tab" data-tab="methodology">Methodology</div>
+      <div class="tab" data-tab="developers">Developers</div>
       <div class="tab" data-tab="audit">Access ledger</div>
       <div class="tab hidden" data-tab="admin" id="adminTab">Admin</div>
     </div>
@@ -230,6 +231,68 @@
       </div>
       <div class="small muted" style="margin:6px 2px 6px">Click any lens for its full methodology.</div>
       <table id="methTable"><thead><tr><th>Lens</th><th>Family</th><th>Unit</th><th>Source</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div id="tab-developers" class="tabpane card hidden">
+      <div style="font-size:18px;font-weight:600;margin-bottom:4px">Agent-callable systemic risk</div>
+      <div class="small muted" style="margin-bottom:14px;max-width:760px">
+        The same engines behind this terminal are exposed as <b>Model Context Protocol (MCP)</b>
+        tools, so your AI copilot — Claude Desktop, a custom agent, any MCP client — can query
+        governed systemic risk directly. <b>Every response carries a reproducibility SHA-256 + provenance</b>,
+        so an agent's answer is content-addressed and audit-traceable — the trust gap a regulated
+        institution has when it lets an LLM touch risk numbers. Computed from the public
+        <span style="font-family:ui-monospace,Menlo,Consolas,monospace">cbsrm</span> methodology only.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+        <div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2)">
+          <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Install &amp; run</div>
+          <pre style="margin:0;background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:var(--ink)">cd api
+pip install -e '.[mcp]'
+cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></pre>
+          <div class="small muted" style="margin-top:10px">
+            You supply your own data keys (<span style="font-family:ui-monospace,Menlo,Consolas,monospace">FINANCIALDATA_API_KEY</span>,
+            <span style="font-family:ui-monospace,Menlo,Consolas,monospace">FRED_API_KEY</span>).
+            <span style="font-family:ui-monospace,Menlo,Consolas,monospace">source="demo"</span> runs offline.
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2)">
+          <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Claude Desktop config</div>
+          <pre style="margin:0;background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:var(--ink)">{
+  "mcpServers": {
+    "cbsrm-systemic-risk": {
+      "command": "python",
+      "args": ["-m", "wavervanir_api.mcp_server"]
+    }
+  }
+}</pre>
+        </div>
+      </div>
+
+      <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">Tools</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr>
+          <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace">tool</th>
+          <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-weight:600">returns</th>
+        </tr></thead>
+        <tbody id="mcpToolsBody"></tbody>
+      </table>
+
+      <div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2);margin-top:16px">
+        <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Every response is governed</div>
+        <pre style="margin:0;background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:var(--ink)">"_governance": {
+  "reproducible": true,
+  "sha256": "…",
+  "as_of": "2026-06-26",
+  "note": "Content-addressed and audit-traceable (CBSRM, SR 26-2). Risk measurement, not investment advice."
+}</pre>
+        <div class="small muted" style="margin-top:10px">
+          Imports only the public <span style="font-family:ui-monospace,Menlo,Consolas,monospace">cbsrm</span> package
+          (AST-enforced boundary) — no proprietary model leaves the box. Full guide:
+          <span style="font-family:ui-monospace,Menlo,Consolas,monospace">docs/MCP_SERVER.md</span>.
+        </div>
+      </div>
     </div>
 
     <div id="tab-audit" class="tabpane card hidden">
@@ -412,6 +475,7 @@ function activate(name){
   if(name==="conditions") loadConditions();
   if(name==="riskdesk") loadRiskdesk();
   if(name==="methodology") loadMethodology();
+  if(name==="developers") loadDevelopers();
   if(name==="audit") loadAudit();
   if(name==="pipeline") loadPipeline();
   if(name==="admin") loadAdmin();
@@ -441,6 +505,25 @@ async function loadConditions(){
     : `<div class="lens bad" data-lens="${rd.id}" style="cursor:pointer"><div class="k">${rd.label}</div><div class="v">unavailable</div>
         <div class="m">${rd.source}</div></div>`).join("");
   $("condGrid").querySelectorAll("[data-lens]").forEach(el => el.onclick = () => openLens(el.dataset.lens));
+}
+
+const MCP_TOOLS = [
+  ["systemic_conditions()", "13-lens systemic-risk snapshot — CISS, Fed stress, yield-curve recession prob, VIX, Diebold-Yilmaz spillover, ESG, …"],
+  ["lens_detail(lens_id)", "History + stats (z-score, percentile, regime bands) for one lens."],
+  ["methodology()", "Per-lens what / how / interpret / academic reference catalog."],
+  ["risk_profile(symbol)", "Institutional cross-asset profile for ANY symbol (^GSPC, EURUSD, GC, BTCUSD, AAPL): Sharpe/Sortino, vol, beta, VaR/CVaR, drawdown, stress, chart."],
+  ["cockpit_group(group)", "Risk grid for a watchlist group: us-benchmarks, global-indices, fx-majors, commodities, us-megacaps, crypto."],
+  ["crisis_dossier(window_id)", "Governed crisis dossier — DebtRank, stress channels, cross-crisis (2008Q4 / 2020Q1 / 2023Q1); reproducible SHA-256."],
+  ["systemic_capital_shortfall()", "Live SRISK Σ + per-firm + ΔCoVaR across major US banks (NYU V-Lab · Adrian-Brunnermeier)."],
+  ["model_validation()", "SR 26-2 MRM binder — inventory, conceptual soundness, SRISK sensitivity sweep, MC convergence, attestation."],
+];
+function loadDevelopers(){
+  const body=$("mcpToolsBody");
+  if(body.dataset.done) return;
+  body.innerHTML = MCP_TOOLS.map(([t,d]) =>
+    `<tr><td style="padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;font-family:ui-monospace,Menlo,Consolas,monospace;color:#7fb2ff">${t}</td>`+
+    `<td style="padding:8px 10px;border-bottom:1px solid var(--line);color:var(--ink)">${d}</td></tr>`).join("");
+  body.dataset.done="1";
 }
 
 function fmtNum(v, fmt){
