@@ -634,15 +634,72 @@ function plCard(label, value, sub){
     <div style="font-size:20px;font-weight:600;margin-top:2px">${value}</div>
     <div class="small muted" style="margin-top:1px">${escHtml(sub||"")}</div></div>`;
 }
-function plCrossCrisis(cc){
+function plGauge(value, label){
+  const v=Math.max(0,Math.min(1,(typeof value==="number")?value:0));
+  const W=200,H=118,cx=100,cy=104,r=76, a0=Math.PI, a1=0;
+  const pt=(t,rad)=>[cx+rad*Math.cos(t), cy-rad*Math.sin(t)];
+  const seg=(s,e,col)=>{ const [x0,y0]=pt(a0+(a1-a0)*s,r),[x1,y1]=pt(a0+(a1-a0)*e,r);
+    return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round"/>`; };
+  const [nx,ny]=pt(a0+(a1-a0)*v, r-14);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">`;
+  s+=seg(0,0.33,"#3fb950")+seg(0.34,0.66,"#d29922")+seg(0.67,1,"#f85149");
+  s+=`<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="#e6edf3" stroke-width="2.5"/><circle cx="${cx}" cy="${cy}" r="4" fill="#e6edf3"/>`;
+  s+=`<text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="22" font-weight="700" fill="#e6edf3">${v.toFixed(2)}</text>`;
+  s+=`<text x="${cx}" y="${cy+13}" text-anchor="middle" font-size="8" letter-spacing="1" fill="var(--muted)">${escHtml(label||"")}</text>`;
+  return s+`</svg>`;
+}
+function plSlope(cc){
   if(!cc||!cc.windows) return "";
-  const ws=cc.windows, row=(label,obj,f)=>`<tr><td>${escHtml(label)}</td>`+ws.map(w=>{const v=obj[w];return `<td style="text-align:right">${v==null?"—":f(v)}</td>`;}).join("")+`</tr>`;
-  return `<div class="small muted" style="margin-bottom:3px">Cross-crisis comparison</div>
-    <table><thead><tr><th>Lens</th>${ws.map(w=>`<th style="text-align:right">${escHtml(w)}</th>`).join("")}</tr></thead><tbody>
-    ${row("DebtRank",cc.debt_rank,v=>Number(v).toFixed(2))}
-    ${row("Volatility z",cc.volatility_z,v=>Number(v).toFixed(1))}
-    ${row("Regime score",cc.regime_score,v=>Number(v).toFixed(2))}</tbody></table>
-    <div class="small muted" style="margin-top:4px">2023Q1: network fragility (DebtRank) with benign macro — read network + macro together.</div>`;
+  const ws=cc.windows, W=400,H=200,padL=78,padR=46,padT=12,padB=22;
+  const lenses=[["DebtRank",cc.debt_rank,"#f0883e"],["Volatility z",cc.volatility_z,"#a371f7"],["Regime score",cc.regime_score,"#58a6ff"]];
+  const x=i=> padL+(W-padL-padR)*(ws.length<2?0.5:i/(ws.length-1));
+  const rowH=(H-padT-padB)/lenses.length;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">`;
+  lenses.forEach((L,li)=>{ const [name,obj,col]=L, nums=ws.map(w=>obj[w]).filter(v=>typeof v==="number");
+    const mn=Math.min(...nums),mx=Math.max(...nums),rng=(mx-mn)||1, y0=padT+rowH*li+10, yH=rowH-22;
+    const yv=v=> y0+yH*(1-(v-mn)/rng);
+    let pts=[]; ws.forEach((w,i)=>{ const v=obj[w]; if(typeof v==="number") pts.push([x(i),yv(v)]); });
+    if(pts.length>1) s+=`<polyline points="${pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="1.6" opacity="0.85"/>`;
+    ws.forEach((w,i)=>{ const v=obj[w]; if(typeof v==="number"){ const px=x(i),py=yv(v);
+      s+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3.6" fill="${col}"/>`;
+      s+=`<text x="${px.toFixed(1)}" y="${(py-6).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#e6edf3">${Number(v).toFixed(2)}</text>`; }});
+    s+=`<text x="6" y="${(y0+yH/2+3).toFixed(1)}" font-size="9" fill="${col}">${escHtml(name)}</text>`;
+  });
+  ws.forEach((w,i)=> s+=`<text x="${x(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="8.5" fill="var(--muted)">${escHtml(w)}</text>`);
+  return s+`</svg>`;
+}
+function plDebtRadial(dr){
+  const v=dr.value||0, n=dr.n_banks||4, W=200,H=190,cx=100,cy=92,R=66, a0=-Math.PI/2;
+  const pt=(a,r)=>[cx+r*Math.cos(a), cy+r*Math.sin(a)];
+  const a1=a0+2*Math.PI*Math.min(1,v), large=(a1-a0)>Math.PI?1:0;
+  const [sx,sy]=pt(a0,R),[ex,ey]=pt(a1,R);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">`;
+  s+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)" stroke-width="6"/>`;
+  if(v>0.001) s+=`<path d="M ${sx.toFixed(1)} ${sy.toFixed(1)} A ${R} ${R} 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="#f0883e" stroke-width="6" stroke-linecap="round"/>`;
+  for(let i=0;i<Math.max(0,n-1);i++){ const a=a0+2*Math.PI*(i+1)/n, [nx,ny]=pt(a,R);
+    s+=`<line x1="${cx}" y1="${cy}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--line)" stroke-width="1" opacity="0.5"/>`;
+    s+=`<circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="6" fill="var(--panel)" stroke="#f0883e" stroke-width="1.5"/>`; }
+  s+=`<circle cx="${cx}" cy="${cy}" r="20" fill="#f0883e" opacity="0.16" stroke="#f0883e"/>`;
+  s+=`<text x="${cx}" y="${cy+3}" text-anchor="middle" font-size="18" font-weight="700" fill="#f0883e">${Number(v).toFixed(2)}</text>`;
+  s+=`<text x="${cx}" y="${cy+R+18}" text-anchor="middle" font-size="8" fill="var(--muted)">${escHtml(dr.seed_node||"SEED")}</text>`;
+  s+=`<text x="${cx}" y="${H-5}" text-anchor="middle" font-size="8" fill="var(--muted)">n=${n} · ${dr.converged?"converged ✓":"—"}</text>`;
+  return s+`</svg>`;
+}
+function plSriskBars(per, totalBn){
+  if(!per||!per.length) return "";
+  const data=per.map(f=>({label:f.firm,val:f.srisk_bn})); data.push({label:"Σ",val:totalBn,sum:true});
+  const W=460,H=220,padL=8,padR=8,padT=24,padB=26, G="#3fb950",B="#f85149";
+  const maxAbs=Math.max(1,...data.map(d=>Math.abs(d.val)));
+  const x=i=> padL+(W-padL-padR)*(i+0.5)/data.length, bw=(W-padL-padR)/data.length*0.58;
+  const zeroY=padT+(H-padT-padB)*0.55, yv=v=> zeroY-(v/maxAbs)*((H-padT-padB)*0.45);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">`;
+  s+=`<text x="${padL}" y="12" font-size="9" fill="var(--muted)">SRISK $bn — shortfall (red) above 0 · surplus (green) below</text>`;
+  s+=`<line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="var(--line)"/>`;
+  data.forEach((d,i)=>{ const xc=x(i), y=yv(d.val), pos=d.val>=0, top=Math.min(zeroY,y), h=Math.max(1,Math.abs(y-zeroY)), col=pos?B:G;
+    s+=`<rect x="${(xc-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" opacity="${d.sum?1:0.82}" rx="2"/>`;
+    s+=`<text x="${xc.toFixed(1)}" y="${(pos?top-4:top+h+11).toFixed(1)}" text-anchor="middle" font-size="9" fill="${col}">${(d.val>0?"+":"")+d.val}</text>`;
+    s+=`<text x="${xc.toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="9" fill="#e6edf3" font-weight="${d.sum?"700":"400"}">${escHtml(d.label)}</text>`; });
+  return s+`</svg>`;
 }
 async function buildPipeline(){
   const w = $("plWindow").value; if(!w) return;
@@ -664,11 +721,13 @@ async function buildPipeline(){
          ${plCard("System Stress",(j.phase_score!=null?Number(j.phase_score).toFixed(2):"—"),phaseUp)}
          ${plCard("DebtRank",(dr.value!=null?Number(dr.value).toFixed(2):"—"),"n_banks "+(dr.n_banks||"—")+(dr.converged?" · converged ✓":""))}
          ${plCard("Macro Regime",phaseUp||"—",(d.risk_posture||"").toUpperCase())}</div>
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px">
+       <div style="display:grid;grid-template-columns:0.8fr 1.05fr 0.8fr;gap:16px;margin-top:16px;align-items:start">
+         <div><div class="small muted" style="margin-bottom:2px">System stress</div>${plGauge(j.phase_score, phaseUp)}</div>
          <div><div class="small muted" style="margin-bottom:4px">System-stress channels (z)</div>
            ${plZBar("Volatility",sc.volatility)}${plZBar("Credit",sc.credit)}${plZBar("Systemic",sc.systemic)}${plZBar("Liquidity",sc.liquidity)}
-           <div style="margin-top:8px"><div class="small muted">Dominant drivers</div><div style="margin-top:3px">${drivers||"—"}</div></div></div>
-         <div>${plCrossCrisis(j.cross_crisis)}</div></div>
+           <div style="margin-top:8px"><div class="small muted">Dominant drivers</div><div style="margin-top:3px;font-size:11px">${drivers||"—"}</div></div></div>
+         <div><div class="small muted" style="margin-bottom:2px">Network contagion · DebtRank</div>${plDebtRadial(dr)}</div></div>
+       <div style="margin-top:16px"><div class="small muted" style="margin-bottom:2px">Cross-crisis comparison · DebtRank vs Volatility vs Regime</div>${plSlope(j.cross_crisis)}</div>
        ${d.research_notes?`<div class="small muted" style="margin-top:14px">Research note</div><div class="small" style="line-height:1.5">${escHtml(d.research_notes)}</div>`:""}
        <div style="margin-top:14px"><div class="small muted">Governed manifest · content-addressed · reproducible</div>
          <div class="small" style="font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:4px;line-height:1.7">
@@ -682,14 +741,8 @@ async function loadSystemic(){
   if(!res.ok){ $("plMsg").textContent="Systemic panel unavailable."; return; }
   const j = await res.json(); $("plMsg").textContent="";
   if(!j.available){ $("plSysResult").innerHTML='<div class="small muted">Bank fundamentals unavailable.</div>'; return; }
-  const sk=j.srisk||{}, per=sk.per_firm||[], G="var(--good,#3fb950)", B="var(--bad,#f85149)";
-  const maxAbs=Math.max(1,...per.map(f=>Math.abs(f.srisk_bn)));
-  const bars=per.map(f=>{ const pos=f.srisk_bn>=0, mag=Math.abs(f.srisk_bn)/maxAbs*100;
-    return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0">
-      <div class="small" style="width:46px"><b>${escHtml(f.firm)}</b></div>
-      <div style="flex:1;height:14px;background:var(--panel);border-radius:3px;position:relative">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:${mag}%;background:${pos?B:G};border-radius:3px;opacity:.8"></div></div>
-      <div class="small" style="width:78px;text-align:right;color:${pos?B:G}">${(f.srisk_bn>0?"+":"")+f.srisk_bn}$bn</div></div>`; }).join("");
+  const sk=j.srisk||{}, per=sk.per_firm||[], B="var(--bad,#f85149)";
+  const bars=plSriskBars(per, sk.total_bn);
   const cov=(j.delta_covar||[]).map(c=>`<tr><td><b>${escHtml(c.firm)}</b> <span class="small muted">${escHtml(c.name)}</span></td><td style="text-align:right;color:${B}">${c.delta_covar}</td></tr>`).join("");
   const md=j.methodology||{}, p=j.params||{};
   $("plSysResult").innerHTML =
