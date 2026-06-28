@@ -15,7 +15,13 @@ import datetime as _dt
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from wavervanir_api import desk_analytics, desk_conditions, desk_pipeline, desk_riskdesk
+from wavervanir_api import (
+    desk_analytics,
+    desk_conditions,
+    desk_pipeline,
+    desk_riskdesk,
+    desk_validation,
+)
 from wavervanir_api.access_audit import (
     AccessKind,
     append_access_event,
@@ -208,6 +214,22 @@ def pipeline_systemic(
     it is not part of the governed record hash — it carries its own timestamp.
     """
     return desk_pipeline.systemic_panel(settings, generated_at_utc=_utc_stamp())
+
+
+@router.get("/desk/pipeline/validation")
+def pipeline_validation(
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """Model Validation package (SR 26-2): the MRM binder for the systemic models.
+
+    Documented inventory / conceptual-soundness / assumptions / dependency graph /
+    attestation, plus COMPUTED evidence — an SRISK parameter-sensitivity sweep
+    (k × crisis threshold, rank stability) and a Monte-Carlo convergence check on
+    LRMES. Benchmarking + backtest declare an honest 'pending data connection'
+    state rather than a fabricated score. Content-addressed (SHA-256).
+    """
+    return desk_validation.validation_package(settings, generated_at_utc=_utc_stamp())
 
 
 @router.get("/desk/pipeline/{window_id}")

@@ -231,10 +231,12 @@
         <button class="btn-ghost" id="plBuild">Build governed record</button>
         <button class="btn-ghost" id="plVerify">Verify reproducibility</button>
         <button class="btn-ghost" id="plSystemic">Systemic panel · SRISK · ΔCoVaR</button>
+        <button class="btn-ghost" id="plValidation">Model Validation · SR 26-2</button>
         <span class="small" id="plMsg"></span>
       </div>
       <div id="plResult" style="margin-top:14px"></div>
       <div id="plSysResult" style="margin-top:14px"></div>
+      <div id="plValResult" style="margin-top:14px"></div>
     </div>
 
     <div id="tab-admin" class="tabpane card hidden">
@@ -361,7 +363,7 @@ function clearPanes(){
   $("auditTable").querySelector("tbody").innerHTML="";
   $("adminUsers").querySelector("tbody").innerHTML=""; $("adminMeta").textContent=""; $("adminMsg").textContent="";
   $("pfInput").value=""; $("pfResult").innerHTML=""; $("pfMsg").textContent="";
-  $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent=""; $("plWindow").innerHTML=""; $("plSysResult").innerHTML="";
+  $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent=""; $("plWindow").innerHTML=""; $("plSysResult").innerHTML=""; $("plValResult").innerHTML="";
 }
 $("logoutBtn").onclick = () => { store.clear(); clearPanes(); show("auth"); $("password").value=""; };
 $("refreshBtn").onclick = () => activate(currentTab());
@@ -757,6 +759,51 @@ async function loadSystemic(){
        <div class="small muted" style="margin-top:12px;line-height:1.5">${escHtml(md.caveat||"")}</div>
      </div>`;
 }
+async function loadValidation(){
+  $("plMsg").textContent="Building SR 26-2 validation package…"; $("plValResult").innerHTML="";
+  const res = await api("/v1/desk/pipeline/validation");
+  if(res.status===403) return gateLost();
+  if(!res.ok){ $("plMsg").textContent="Validation package unavailable."; return; }
+  const j = await res.json(); $("plMsg").textContent="";
+  const G="#3fb950",B="#f85149",A="#d29922",Bl="#58a6ff";
+  const sc=s=> /computed|active/.test(s)?G : /pending|operator/.test(s)?A : Bl;
+  const strip=(j.pillar_status||[]).map(p=>`<span class="pill" style="border-color:${sc(p.status)};color:${sc(p.status)};margin:2px;display:inline-block">${escHtml(p.pillar)} · ${escHtml(p.status)}</span>`).join("");
+  const inv=(j.model_inventory||[]).map(m=>`<tr><td><b>${escHtml(m.id)}</b></td><td>${escHtml(m.name)}</td><td class="small">${escHtml(m.tier)}</td><td class="small muted">${escHtml(m.intended_use)}</td></tr>`).join("");
+  const nonm=(j.non_model_components||[]).map(m=>`<tr style="opacity:.65"><td><b>${escHtml(m.id)}</b></td><td>${escHtml(m.name)}</td><td colspan="2" class="small muted">outside SR 26-2 model scope · deterministic software</td></tr>`).join("");
+  const meth=(j.methodology||[]).map(m=>`<div style="margin:5px 0"><b>${escHtml(m.id)}</b> <span class="small" style="font-family:ui-monospace,Menlo,Consolas,monospace">${escHtml(m.equation)}</span><br><span class="small muted">${escHtml(m.citation)}</span></div>`).join("");
+  const asum=(j.assumptions||[]).map(a=>{ const c=a.materiality==="HIGH"?B:a.materiality==="MED"?A:G;
+    return `<tr><td><b>${escHtml(a.model)}</b></td><td>${escHtml(a.assumption)}</td><td style="color:${c}">${escHtml(a.materiality)}</td><td class="small muted">${escHtml(a.bias)}</td></tr>`;}).join("");
+  const sn=j.sensitivity||{}; let sens;
+  if(sn.available){ const ks=sn.ks, cr=sn.crises, cell=(k,c)=>sn.grid.find(g=>g.k===k&&g.crisis===c)||{};
+    sens=`<table><thead><tr><th>k \\ crisis</th>${cr.map(c=>`<th style="text-align:right">${c}</th>`).join("")}</tr></thead><tbody>`
+      +ks.map(k=>`<tr><td><b>${k}</b></td>`+cr.map(c=>{const g=cell(k,c),base=(k===0.08&&c===-0.4);return `<td style="text-align:right${base?";outline:1px solid var(--accent)":""}">Σ ${g.total_bn}$bn<br><span class="small muted">${(g.top3||[]).join("·")}</span></td>`;}).join("")+`</tr>`).join("")
+      +`</tbody></table><div class="small" style="margin-top:4px;color:${A}">${escHtml(sn.verdict)}</div>`;
+  } else sens='<div class="small muted">Pending bank-fundamentals connection.</div>';
+  const mc=j.mc_convergence||{}, bs=mc.by_seed||{}, mcCol=mc.converged?G:A;
+  const mcTab=`<table><thead><tr><th>n_paths · seed 42</th><th style="text-align:right">LRMES</th></tr></thead><tbody>${(mc.by_paths||[]).map(x=>`<tr><td>${x.n_paths}</td><td style="text-align:right">${x.lrmes}</td></tr>`).join("")}</tbody></table>`;
+  $("plValResult").innerHTML=`<div style="border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--panel-2)">
+    <div class="row"><strong>Model Validation · SR 26-2</strong><div class="spacer"></div><span class="small muted">${escHtml(j.framework||"")}</span></div>
+    <div style="margin:10px 0;line-height:2">${strip}</div>
+    <details open><summary class="small muted" style="cursor:pointer">Model inventory & materiality tiering</summary>
+      <table style="margin-top:6px"><thead><tr><th>ID</th><th>Model</th><th>Tier</th><th>Intended use</th></tr></thead><tbody>${inv}${nonm}</tbody></table></details>
+    <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Conceptual soundness · methodology & citations</summary><div style="margin-top:6px">${meth}</div></details>
+    <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Assumption & limitation register (materiality-rated)</summary>
+      <table style="margin-top:6px"><thead><tr><th>Model</th><th>Assumption</th><th>Mat.</th><th>Bias</th></tr></thead><tbody>${asum}</tbody></table></details>
+    <details open style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Sensitivity & stress · SRISK Σ over k × crisis threshold</summary><div style="margin-top:6px">${sens}</div></details>
+    <details open style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Numerical convergence · LRMES Monte-Carlo</summary>
+      <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1.2fr;gap:14px">${mcTab}
+        <div class="small">Seed stability @2000: ${(bs.lrmes||[]).join(", ")}<br>mean ${bs.mean} · std ${bs.std} (${bs.rel_pct}%)
+          <div style="color:${mcCol};margin-top:5px;line-height:1.45">${escHtml(mc.verdict||"")}</div></div></div></details>
+    <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Dependency graph · change → re-review dependents</summary>
+      <div class="small" style="margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.6">${(j.dependency_edges||[]).map(e=>escHtml(e[0])+" → "+escHtml(e[1])).join("<br>")}</div></details>
+    <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Benchmarking & crisis backtest</summary>
+      <div class="small" style="margin-top:6px"><span class="pill" style="border-color:${A};color:${A}">${escHtml((j.benchmarking||{}).status||"")}</span> ${escHtml((j.benchmarking||{}).method||"")} <span class="muted">${escHtml((j.benchmarking||{}).note||"")}</span></div>
+      <div class="small" style="margin-top:8px"><span class="pill" style="border-color:${A};color:${A}">${escHtml((j.backtest||{}).status||"")}</span> ${escHtml((j.backtest||{}).method||"")}</div></details>
+    <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Ongoing monitoring & attestation</summary>
+      <div class="small" style="margin-top:6px">Re-validation triggers: ${escHtml(((j.monitoring_policy||{}).revalidation_triggers||[]).join(" · "))}</div>
+      <div class="small muted" style="margin-top:6px">${escHtml((j.attestation||{}).note||"")}</div></details>
+    <div class="small" style="margin-top:12px;font-family:ui-monospace,Menlo,Consolas,monospace">validation sha256 ${escHtml((j.output_sha256||"").slice(0,28))}…</div></div>`;
+}
 async function verifyPipeline(){
   const w = $("plWindow").value; if(!w) return;
   $("plMsg").textContent="Verifying…";
@@ -774,6 +821,7 @@ async function verifyPipeline(){
 $("plBuild").onclick = buildPipeline;
 $("plVerify").onclick = verifyPipeline;
 $("plSystemic").onclick = loadSystemic;
+$("plValidation").onclick = loadValidation;
 async function loadAudit(){
   const res = await api("/v1/desk/audit/export");
   if(res.status===403){ $("auditMeta").textContent="Subscribe to unlock the access ledger."; $("chainPill").textContent=""; $("chainPill").className="pill"; $("auditTable").querySelector("tbody").innerHTML=""; return gateLost(); }

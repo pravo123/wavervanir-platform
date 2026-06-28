@@ -229,8 +229,25 @@ _BANK_NAMES = {"JPM": "JPMorgan Chase", "BAC": "Bank of America", "C": "Citigrou
                "WFC": "Wells Fargo", "GS": "Goldman Sachs", "MS": "Morgan Stanley"}
 
 
+def _latest_date(rows) -> Optional[str]:
+    """Max ISO trade date (``YYYY-MM-DD``) across price ``rows``, or ``None``.
+
+    financialdata price rows carry a ``date`` field; ISO strings sort
+    chronologically, so ``max`` is the freshest vintage regardless of row order.
+    """
+    if not isinstance(rows, list):
+        return None
+    dates = [str(r["date"])[:10] for r in rows
+             if isinstance(r, dict) and r.get("date")]
+    return max(dates) if dates else None
+
+
 def _bank_inputs(settings, sym, lrmes):
-    """(srisk_input, firm_returns) for one bank, or (None, None)."""
+    """(srisk_input, firm_returns, as_of) for one bank, or (None, None, None).
+
+    ``as_of`` is the latest trade date present in the stock-price rows actually
+    used (the price-data vintage), for the live panel's data-lineage stamp.
+    """
     from wavervanir_api.providers.financialdata import get_json
 
     try:
@@ -238,17 +255,18 @@ def _bank_inputs(settings, sym, lrmes):
         mc = get_json(settings, "market-cap", params={"identifier": sym, "offset": 0})
         bs = get_json(settings, "balance-sheet-statements", params={"identifier": sym, "offset": 0})
     except Exception:
-        return None, None
+        return None, None, None
     if not (isinstance(px, list) and px and isinstance(mc, list) and mc
             and isinstance(bs, list) and bs):
-        return None, None
+        return None, None, None
     try:
         W = float(mc[0]["market_cap"])
         D = float(bs[0]["total_liabilities"])
     except (KeyError, TypeError, ValueError):
-        return None, None
+        return None, None, None
     closes = [float(r["close"]) for r in px if isinstance(r.get("close"), (int, float))]
-    return ({"firm": sym, "market_cap_W": W, "book_debt_D": D, "lrmes": lrmes}, closes)
+    return ({"firm": sym, "market_cap_W": W, "book_debt_D": D, "lrmes": lrmes},
+            closes, _latest_date(px))
 
 
 def systemic_panel(settings, *, firms=None, generated_at_utc: Optional[str] = None) -> dict:
@@ -262,19 +280,25 @@ def systemic_panel(settings, *, firms=None, generated_at_utc: Optional[str] = No
     lrmes = float(LRMESMonteCarlo(
         horizon_days=SRISK_PARAMS["horizon_days"], crisis_threshold=SRISK_PARAMS["crisis_threshold"],
         n_paths=SRISK_PARAMS["n_paths"], seed=SRISK_PARAMS["seed"]).compute()["lrmes"])
+    as_of_dates: list[str] = []
     try:
         mrows = index_prices(settings, "^GSPC")
         mkt = [float(r["close"]) for r in mrows if isinstance(r.get("close"), (int, float))]
         mret = np.diff(np.log(mkt[::-1])) if len(mkt) > 2 else None
+        m_date = _latest_date(mrows)
+        if m_date:
+            as_of_dates.append(m_date)
     except Exception:
         mret = None
 
-    inputs, covars, as_of = [], [], None
+    inputs, covars = [], []
     for sym in firms:
-        row, closes = _bank_inputs(settings, sym, lrmes)
+        row, closes, bank_date = _bank_inputs(settings, sym, lrmes)
         if row is None:
             continue
         inputs.append(row)
+        if bank_date:
+            as_of_dates.append(bank_date)
         if mret is not None and closes and len(closes) > 3:
             fret = np.diff(np.log(np.array(closes[::-1])))
             n = min(len(fret), len(mret))
@@ -287,6 +311,8 @@ def systemic_panel(settings, *, firms=None, generated_at_utc: Optional[str] = No
                 pass
     if not inputs:
         return {"available": False, "reason": "bank fundamentals unavailable"}
+
+    as_of = max(as_of_dates) if as_of_dates else None  # freshest vintage actually used
 
     panel = srisk_panel(inputs, k=SRISK_PARAMS["k"])
     per = [{"firm": r["firm"], "name": _BANK_NAMES.get(r["firm"], r["firm"]),
