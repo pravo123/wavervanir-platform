@@ -157,19 +157,34 @@
     </div>
 
     <div id="tab-riskdesk" class="tabpane card hidden">
-      <div class="row small muted">
-        <span id="rdMeta">Loading…</span>
+      <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+        <strong style="margin:0">Quant Cockpit</strong>
+        <span class="small muted">global cross-asset risk · any symbol the feed supports</span>
         <div class="spacer"></div>
-        <label style="margin:0">Source</label>
+        <select id="rdGroup" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px">
+          <option value="us-benchmarks">US Benchmarks</option>
+          <option value="global-indices">Global Indices</option>
+          <option value="fx-majors">FX Majors</option>
+          <option value="commodities">Commodities</option>
+          <option value="us-megacaps">US Mega-Caps</option>
+          <option value="crypto">Crypto</option>
+        </select>
+        <input id="rdSearch" placeholder="any symbol — ^GSPC · EURUSD · GC · BTCUSD · AAPL" autocomplete="off"
+          style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;width:230px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px" />
+        <button id="rdSearchBtn" class="btn-ghost">Analyze</button>
         <select id="rdSource" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px">
           <option value="live">live</option>
           <option value="demo">demo</option>
         </select>
       </div>
-      <div class="small muted" style="margin:6px 2px">US equity benchmark risk desk — SPY · DJI · IWM · QQQ.</div>
-      <div id="rdPosture" style="margin:8px 0 12px"></div>
-      <table id="rdTable"><thead><tr><th>Benchmark</th><th>Level</th><th>1d</th><th>1m</th><th>Vol 20d</th><th>vs 50-DMA</th><th>Drawdown</th><th>State</th></tr></thead><tbody></tbody></table>
+      <div class="row small muted" style="margin:8px 2px 6px"><span id="rdMeta">Loading…</span><div class="spacer"></div><span id="rdPosture"></span></div>
+      <table id="rdTable"><thead><tr>
+        <th>Instrument</th><th style="text-align:right">Level</th><th style="text-align:right">1D</th><th style="text-align:right">1M</th>
+        <th style="text-align:right">Vol 20d</th><th style="text-align:right">VaR 95%</th><th style="text-align:right">β S&amp;P</th>
+        <th style="text-align:right">Drawdown</th><th style="text-align:right">vs 200-DMA</th><th style="text-align:center">State</th>
+      </tr></thead><tbody></tbody></table>
       <div class="small muted" id="rdFoot" style="margin-top:8px"></div>
+      <div id="rdPanel" class="hidden" style="border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:14px;background:var(--panel-2)"></div>
     </div>
 
     <div id="tab-methodology" class="tabpane card hidden">
@@ -339,6 +354,7 @@ function clearPanes(){
   $("methPanel").classList.add("hidden");
   $("methNote").textContent=""; $("methTable").querySelector("tbody").innerHTML="";
   $("rdMeta").textContent=""; $("rdPosture").innerHTML=""; $("rdTable").querySelector("tbody").innerHTML=""; $("rdFoot").textContent="";
+  $("rdPanel").classList.add("hidden"); $("rdPanel").innerHTML=""; $("rdSearch").value="";
   $("auditMeta").textContent=""; $("chainPill").textContent=""; $("chainPill").className="pill";
   $("auditTable").querySelector("tbody").innerHTML="";
   $("adminUsers").querySelector("tbody").innerHTML=""; $("adminMeta").textContent=""; $("adminMsg").textContent="";
@@ -469,34 +485,82 @@ function openMethodology(id){
   p.scrollIntoView({block:"nearest"});
 }
 $("mpClose").onclick = () => $("methPanel").classList.add("hidden");
-// ---- US-index risk desk ----
+// ---- Quant Cockpit (Risk Desk) ----
+const RG="var(--good,#3fb950)", RB="var(--bad,#f85149)", RA="var(--amber,#d29922)";
+const rstc = s => s==="risk-on"?RG:s==="risk-off"?RB:RA;
+const rpct = v => v==null?"—":((v>0?"+":"")+v+"%");
 async function loadRiskdesk(){
-  const res = await api("/v1/desk/riskdesk?source="+$("rdSource").value);
-  if(res.status===403){ $("rdMeta").textContent="Subscribe to unlock the risk desk."; $("rdTable").querySelector("tbody").innerHTML=""; $("rdPosture").innerHTML=""; return gateLost(); }
-  if(!res.ok){ $("rdMeta").textContent="Risk desk unavailable."; return; }
+  $("rdPanel").classList.add("hidden");
+  const grp = $("rdGroup").value || "us-benchmarks";
+  const res = await api("/v1/desk/riskdesk?group="+encodeURIComponent(grp)+"&source="+$("rdSource").value);
+  if(res.status===403){ $("rdMeta").textContent="Subscribe to unlock the cockpit."; $("rdTable").querySelector("tbody").innerHTML=""; $("rdPosture").innerHTML=""; return gateLost(); }
+  if(!res.ok){ $("rdMeta").textContent="Cockpit unavailable."; return; }
   const j = await res.json();
-  $("rdMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
+  $("rdMeta").textContent = j.group_label+" · "+j.summary.live+"/"+j.summary.total+" live"+(j.as_of?" · "+j.as_of:"")+" · sha "+(j.output_sha256||"").slice(0,10)+"…";
   const p = j.posture||{};
-  const G="var(--good,#3fb950)", B="var(--bad,#f85149)", A="var(--amber,#d29922)";
-  const col = p.label==="RISK-ON"?G:p.label==="RISK-OFF"?B:A;
-  $("rdPosture").innerHTML = p.label && p.label!=="unavailable"
-    ? `<span class="pill" style="border-color:${col};color:${col}">${escHtml(p.label)}</span> <span class="small muted">breadth ${escHtml(p.breadth_above_50dma||"")} above 50-DMA · avg drawdown ${p.avg_drawdown_pct}% · small-cap lead ${p.smallcap_leadership_pct!=null?(p.smallcap_leadership_pct>0?"+":"")+p.smallcap_leadership_pct+"%":"—"}</span>`
-    : "";
-  const sgn = v => (v>0?"+":"")+v;
-  const stc = s => s==="risk-on"?G:s==="risk-off"?B:A;
-  $("rdTable").querySelector("tbody").innerHTML = (j.indices||[]).map(i => i.status==="ok"
-    ? `<tr><td><b>${escHtml(i.ticker)}</b> <span class="small muted">${escHtml(i.name)}</span></td>
-         <td>${i.spot}</td>
-         <td style="color:${i.chg_1d>=0?G:B}">${sgn(i.chg_1d)}%</td>
-         <td style="color:${i.ret_21d>=0?G:B}">${sgn(i.ret_21d)}%</td>
-         <td>${i.vol_20d}%</td>
-         <td style="color:${i.vs_sma50>=0?G:B}">${sgn(i.vs_sma50)}%</td>
-         <td style="color:${i.drawdown<-5?B:A}">${i.drawdown}%</td>
-         <td><span style="color:${stc(i.state)}">${escHtml(i.state)}</span></td></tr>`
-    : `<tr><td><b>${escHtml(i.ticker)}</b> <span class="small muted">${escHtml(i.name)}</span></td><td colspan="7" class="muted">unavailable</td></tr>`).join("");
+  const col = p.label==="RISK-ON"?RG:p.label==="RISK-OFF"?RB:RA;
+  $("rdPosture").innerHTML = (p.label?`<span class="pill" style="border-color:${col};color:${col}">${escHtml(p.label)}</span> `:"")
+    + `<span class="small muted">${escHtml(p.breadth_above_50dma||"")} above 50-DMA · avg VaR ${p.avg_var_95_1d_pct}% · avg DD ${p.avg_drawdown_pct}%</span>`;
+  $("rdTable").querySelector("tbody").innerHTML = (j.rows||[]).map(i => i.status==="ok"
+    ? `<tr data-sym="${escHtml(i.symbol)}" style="cursor:pointer"><td><b>${escHtml(i.ticker)}</b> <span class="small muted">${escHtml(i.name)}</span></td>
+         <td style="text-align:right">${i.spot}</td>
+         <td style="text-align:right;color:${i.chg_1d>=0?RG:RB}">${rpct(i.chg_1d)}</td>
+         <td style="text-align:right;color:${i.ret_21d>=0?RG:RB}">${rpct(i.ret_21d)}</td>
+         <td style="text-align:right">${i.vol_20d}%</td>
+         <td style="text-align:right;color:${RB}">${i.var_95_1d}%</td>
+         <td style="text-align:right">${i.beta==null?"—":i.beta}</td>
+         <td style="text-align:right;color:${i.drawdown<-5?RB:RA}">${i.drawdown}%</td>
+         <td style="text-align:right;color:${(i.vs_sma200||0)>=0?RG:RB}">${rpct(i.vs_sma200)}</td>
+         <td style="text-align:center"><span style="color:${rstc(i.state)}">${escHtml(i.state)}</span></td></tr>`
+    : `<tr><td><b>${escHtml(i.ticker)}</b> <span class="small muted">${escHtml(i.name)}</span></td><td colspan="9" class="muted" style="text-align:center">unavailable</td></tr>`).join("");
+  $("rdTable").querySelectorAll("[data-sym]").forEach(el => el.onclick = () => openSymbol(el.dataset.sym));
   $("rdFoot").textContent = j.disclaimer||"";
 }
+async function openSymbol(sym){
+  sym = (sym||"").trim().toUpperCase(); if(!sym) return;
+  const pn = $("rdPanel"); pn.classList.remove("hidden");
+  pn.innerHTML = '<div class="small muted">Analyzing '+escHtml(sym)+'…</div>';
+  const res = await api("/v1/desk/riskdesk/symbol/"+encodeURIComponent(sym));
+  if(res.status===403) return gateLost();
+  if(res.status===404){ pn.innerHTML = '<div class="small muted">“'+escHtml(sym)+'” isn’t on the feed. Try an index (^GSPC), FX (EURUSD), commodity (GC), crypto (BTCUSD), or a US stock/ETF.</div>'; return; }
+  if(!res.ok){ pn.innerHTML = '<div class="small muted">Unavailable.</div>'; return; }
+  const j = await res.json(); const rd=j.risk_desk||{}, h=j.horizons||{}, tr=j.trend||{}, pv=j.provenance||{};
+  const varRows = (j.var_table||[]).map(r=>`<tr><td>${r.horizon} ${r.confidence}</td><td style="text-align:right;color:${RB}">${r.var_pct}%</td><td style="text-align:right;color:${RB}">${r.cvar_pct}%</td></tr>`).join("");
+  const stRows = (j.macro_stress||[]).map(r=>`<tr><td>${escHtml(r.scenario)}</td><td style="text-align:right;color:${r.move_pct>=0?RG:RB}">${rpct(r.move_pct)}</td><td style="text-align:right" class="muted">${r.implied_price}</td></tr>`).join("");
+  pn.innerHTML = `
+    <div class="row"><strong style="font-size:15px">${escHtml(j.symbol)}</strong> <span class="small muted">${escHtml(j.kind)} · as-of ${escHtml(j.as_of)}</span>
+      <span class="pill" style="border-color:${rstc(j.state)};color:${rstc(j.state)};margin-left:8px">${escHtml(j.state)}</span>
+      <div class="spacer"></div><span class="small muted">px ${j.price}</span></div>
+    <div class="row" style="gap:26px;margin-top:8px">
+      <div><div class="small muted">1W</div><div style="color:${(h.ret_1w_pct||0)>=0?RG:RB}">${rpct(h.ret_1w_pct)}</div></div>
+      <div><div class="small muted">1M</div><div style="color:${(h.ret_1m_pct||0)>=0?RG:RB}">${rpct(h.ret_1m_pct)}</div></div>
+      <div><div class="small muted">3M</div><div style="color:${(h.ret_3m_pct||0)>=0?RG:RB}">${rpct(h.ret_3m_pct)}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px">
+      <div><div class="small muted" style="margin-bottom:3px">Risk Desk</div>
+        <table><tbody>
+          <tr><td>Sharpe</td><td style="text-align:right">${rd.sharpe}</td><td>Sortino</td><td style="text-align:right">${rd.sortino}</td></tr>
+          <tr><td>Ann Vol</td><td style="text-align:right">${rd.ann_vol_pct}%</td><td>EWMA Vol</td><td style="text-align:right">${rd.ewma_vol_pct}%</td></tr>
+          <tr><td>Beta S&amp;P</td><td style="text-align:right">${rd.beta_sp==null?"—":rd.beta_sp}</td><td>Max DD</td><td style="text-align:right;color:${RB}">${rd.max_drawdown_pct}%</td></tr>
+          <tr><td>Ann Return</td><td style="text-align:right">${rd.ann_return_pct}%</td><td>vs 200-DMA</td><td style="text-align:right">${rpct(tr.vs_sma200_pct)}</td></tr>
+        </tbody></table></div>
+      <div><div class="small muted" style="margin-bottom:3px">Value-at-Risk / CVaR · historical</div>
+        <table><thead><tr><th>Horizon</th><th style="text-align:right">VaR</th><th style="text-align:right">CVaR</th></tr></thead><tbody>${varRows}</tbody></table></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px">
+      <div><div class="small muted" style="margin-bottom:3px">Macro Stress · beta-driven</div>
+        <table><thead><tr><th>Scenario</th><th style="text-align:right">Move</th><th style="text-align:right">Implied</th></tr></thead><tbody>${stRows}</tbody></table></div>
+      <div><div class="small muted" style="margin-bottom:3px">Quant Read</div>
+        <div style="line-height:1.5">${escHtml(j.quant_read||"")}</div>
+        <div class="small muted" style="margin-top:10px">Provenance &amp; Integrity</div>
+        <div class="small" style="font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.7">${pv.data_points} pts · ${escHtml(pv.source||"")} (${escHtml(pv.endpoint_kind||"")}) · as-of ${escHtml(pv.as_of||"")}<br>sha256 ${escHtml((j.output_sha256||"").slice(0,28))}…</div></div>
+    </div>`;
+  pn.scrollIntoView({block:"nearest"});
+}
+$("rdGroup").onchange = loadRiskdesk;
 $("rdSource").onchange = loadRiskdesk;
+$("rdSearchBtn").onclick = () => openSymbol($("rdSearch").value);
+$("rdSearch").onkeydown = (e) => { if(e.key==="Enter") openSymbol($("rdSearch").value); };
 // ---- governed PipelineRecord ----
 async function loadPipeline(){
   $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent="";

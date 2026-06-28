@@ -106,18 +106,43 @@ def lens_analytics(
 
 @router.get("/desk/riskdesk")
 def risk_desk(
+    group: str = Query("us-benchmarks"),
     source: str = Query("live", pattern="^(live|demo)$"),
     ctx: UserContext = Depends(require_desk),
     settings: Settings = Depends(get_settings),
 ) -> dict:
-    """US-index risk desk: SPY / DJI / IWM / QQQ benchmark risk metrics + posture.
+    """Quant Cockpit watchlist grid for ``group`` (any-symbol via the route below).
 
-    Native CBSRM view (no VolanX import) — level, 1d/1m return, 20-day realised
-    vol, drawdown, trend vs the 50-DMA, and a composite breadth/risk posture,
-    computed from the financialdata.net index-prices feed. ``source=demo`` returns
-    a deterministic snapshot for offline preview.
+    Native CBSRM view (no VolanX import) of a global cross-asset watchlist — US &
+    world equity indices, FX majors, commodities, mega-caps, crypto — each with
+    level, 1d/1m return, 20-day realised vol, 1-day 95% VaR, beta to the S&P,
+    drawdown, and trend, plus a composite posture. ``source=demo`` is deterministic.
     """
-    return desk_riskdesk.build(source=source, settings=settings, generated_at_utc=_utc_stamp())
+    return desk_riskdesk.build(group=group, source=source, settings=settings,
+                               generated_at_utc=_utc_stamp())
+
+
+@router.get("/desk/riskdesk/symbol/{symbol}")
+def risk_desk_symbol(
+    symbol: str,
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """Institutional cockpit read for ANY symbol the feed supports.
+
+    Returns multi-horizon returns, the risk-desk panel (Sharpe/Sortino/ann &
+    EWMA vol/beta/max-drawdown), a horizon VaR/CVaR table, beta-driven macro
+    stress scenarios, a quant read, and reproducible SHA-256 provenance.
+    """
+    profile = desk_riskdesk.risk_profile(settings, symbol, generated_at_utc=_utc_stamp())
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "symbol_unavailable", "symbol": symbol.upper(),
+                    "hint": "try an index (^GSPC), FX pair (EURUSD), commodity (GC), "
+                            "crypto (BTCUSD), or a US stock/ETF ticker"},
+        )
+    return profile
 
 
 # ── Governed PipelineRecord ─────────────────────────────────────────────────
