@@ -196,12 +196,27 @@ async def pipeline_verify(
     return result
 
 
+@router.get("/desk/pipeline/systemic")
+def pipeline_systemic(
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """Live systemic capital-shortfall panel: SRISK Σ + per-firm + ΔCoVaR across
+    the major-US-bank panel (NYU V-Lab / Adrian-Brunnermeier engines in cbsrm.risk).
+
+    A live read on current balance sheets (not a point-in-time crisis vintage), so
+    it is not part of the governed record hash — it carries its own timestamp.
+    """
+    return desk_pipeline.systemic_panel(settings, generated_at_utc=_utc_stamp())
+
+
 @router.get("/desk/pipeline/{window_id}")
 def pipeline_record(
     window_id: str,
     ctx: UserContext = Depends(require_desk),
 ) -> dict:
-    """The governed PipelineRecord for one crisis window — report + manifest."""
+    """The governed PipelineRecord for one crisis window — report + manifest +
+    deterministic crisis dossier (system-stress channels, DebtRank, cross-crisis)."""
     try:
         return desk_pipeline.build_record(window_id, generated_at_utc=_utc_stamp())
     except KeyError:

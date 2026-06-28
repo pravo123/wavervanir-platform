@@ -122,3 +122,35 @@ def test_pipeline_unknown_window_404(client):
     r = client.get("/v1/desk/pipeline/1999Q9", headers=h)
     assert r.status_code == 404
     assert "2008Q4" in r.json()["detail"]["supported"]
+
+
+# ── crisis dossier + cross-crisis (deterministic, from cbsrm fixtures) ───────
+
+def test_record_includes_dossier_and_cross_crisis():
+    rec = desk_pipeline.build_record("2023Q1")
+    d = rec["dossier"]
+    assert d is not None
+    # the four supervisory stress channels behind the gauge
+    assert set(d["stress_channels"]) == {"volatility", "credit", "systemic", "liquidity"}
+    # 2023Q1 is the network-fragility-with-benign-macro window
+    assert d["debt_rank"]["value"] and 0.3 < d["debt_rank"]["value"] < 0.45
+    assert d["debt_rank"]["n_banks"] == 4
+    cc = rec["cross_crisis"]
+    assert cc["windows"] == ["2008Q4", "2020Q1", "2023Q1"]
+    # DebtRank: 2008 highest, 2020 lowest, 2023 in between (the cross-crisis story)
+    assert cc["debt_rank"]["2008Q4"] > cc["debt_rank"]["2023Q1"] > cc["debt_rank"]["2020Q1"]
+
+
+def test_dossier_does_not_break_reproducibility():
+    # the manifest hash covers the macro report only, so the dossier doesn't drift it
+    a = desk_pipeline.build_record("2008Q4")["manifest"]["hashes"]["output_sha256"]
+    b = desk_pipeline.build_record("2008Q4")["manifest"]["hashes"]["output_sha256"]
+    assert a == b
+
+
+def test_systemic_panel_route_gated(client):
+    assert client.get("/v1/desk/pipeline/systemic").status_code == 401
+    free = _free_token(client, email="free-sys@example.com")
+    assert client.get(
+        "/v1/desk/pipeline/systemic", headers={"Authorization": f"Bearer {free}"}
+    ).status_code == 403

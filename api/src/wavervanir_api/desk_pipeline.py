@@ -75,12 +75,76 @@ def catalog() -> dict:
     }
 
 
+CROSS_WINDOWS = ["2008Q4", "2020Q1", "2023Q1"]
+
+
+def _diagnostics():
+    import cbsrm.diagnostics as D  # public, AST-boundary-allowed
+
+    return D
+
+
+def _dossier_block(window_id: str) -> Optional[dict]:
+    """Deterministic crisis dossier: system-stress channels, DebtRank contagion,
+    regime, narrative — composed from cbsrm's fixtures (reproducible)."""
+    try:
+        D = _diagnostics()
+        doss = D.build_crisis_dossier(window_id)
+        fix = D.get_fixture_snapshot(window_id)
+    except Exception:
+        return None
+    feat = fix.get("phase_features", {}) or {}
+    net = doss.get("network_stress_summary", {}) or {}
+    return {
+        "title": doss.get("title"),
+        "period": doss.get("period"),
+        "shock_summary": doss.get("shock_summary"),
+        "research_notes": doss.get("research_notes"),
+        "phase": doss.get("phase_label"),
+        "risk_posture": doss.get("risk_posture"),
+        "dominant_drivers": doss.get("dominant_drivers", []),
+        # the four supervisory stress channels behind the system-stress gauge
+        "stress_channels": {
+            "volatility": feat.get("volatility_z"),
+            "credit": feat.get("credit_spread_z"),
+            "systemic": feat.get("systemic_risk_z"),
+            "liquidity": feat.get("liquidity_z"),
+        },
+        "debt_rank": {
+            "value": net.get("debt_rank"), "n_banks": net.get("n_banks"),
+            "iterations": net.get("iterations"), "converged": net.get("converged"),
+            "seed_node": net.get("seed_node"),
+        },
+        "macro_events": doss.get("macro_event_scores", []),
+    }
+
+
+def _cross_crisis() -> dict:
+    """Three windows, three lenses: DebtRank, volatility-z, and regime score —
+    the cross-crisis comparison (network fragility vs benign macro in 2023Q1)."""
+    R, D = _reporting(), _diagnostics()
+    out = {"windows": CROSS_WINDOWS, "debt_rank": {}, "volatility_z": {}, "regime_score": {}}
+    for w in CROSS_WINDOWS:
+        try:
+            doss = D.build_crisis_dossier(w)
+            fix = D.get_fixture_snapshot(w)
+            rep = R.build_macro_composite_report(w)
+            out["debt_rank"][w] = (doss.get("network_stress_summary", {}) or {}).get("debt_rank")
+            out["volatility_z"][w] = (fix.get("phase_features", {}) or {}).get("volatility_z")
+            out["regime_score"][w] = (rep.get("phase_classification", {}) or {}).get("score")
+        except Exception:
+            continue
+    return out
+
+
 def build_record(window_id: str, *, generated_at_utc: Optional[str] = None) -> dict:
     """Build the governed PipelineRecord for ``window_id``.
 
     Raises ``KeyError`` if the window is not a governed window. The returned
     ``manifest.hashes`` are reproducible: they hash the rendered report and the
-    payload, not the wall-clock, so a rebuild yields identical hashes.
+    payload, not the wall-clock, so a rebuild yields identical hashes. The
+    ``dossier`` + ``cross_crisis`` blocks are likewise deterministic (from
+    cbsrm fixtures), so they fold into the governed record.
     """
     if window_id not in available_windows():
         raise KeyError(window_id)
@@ -110,6 +174,8 @@ def build_record(window_id: str, *, generated_at_utc: Optional[str] = None) -> d
         "disclaimer": report.get("disclaimer"),
         "markdown": markdown,
         "manifest": manifest,
+        "dossier": _dossier_block(window_id),
+        "cross_crisis": _cross_crisis(),
         "generated_at_utc": generated_at_utc,
     }
 
@@ -146,3 +212,113 @@ def verify_record(
     else:
         out["reproduced"] = deterministic
     return out
+
+
+# ── live systemic capital-shortfall panel (SRISK + ΔCoVaR) ───────────────────
+# The blueprint flagship: NYU V-Lab-style SRISK + Adrian-Brunnermeier ΔCoVaR on
+# the current major-US-bank panel, from public balance sheets + market cap +
+# prices. A single shared LRMES (default GARCH-DCC, calibrated for US-financials
+# vs S&P) is applied to all firms — documented as a caveat, matching the standard
+# simplification. This is LIVE (changes daily) so it is NOT folded into the
+# governed record hash; it carries its own as-of stamp.
+
+SYSTEMIC_BANKS = ["JPM", "BAC", "C", "WFC", "GS", "MS"]
+SRISK_PARAMS = {"k": 0.08, "horizon_days": 126, "crisis_threshold": -0.40,
+                "n_paths": 2000, "seed": 42}
+_BANK_NAMES = {"JPM": "JPMorgan Chase", "BAC": "Bank of America", "C": "Citigroup",
+               "WFC": "Wells Fargo", "GS": "Goldman Sachs", "MS": "Morgan Stanley"}
+
+
+def _bank_inputs(settings, sym, lrmes):
+    """(srisk_input, firm_returns) for one bank, or (None, None)."""
+    from wavervanir_api.providers.financialdata import get_json
+
+    try:
+        px = get_json(settings, "stock-prices", params={"identifier": sym, "offset": 0})
+        mc = get_json(settings, "market-cap", params={"identifier": sym, "offset": 0})
+        bs = get_json(settings, "balance-sheet-statements", params={"identifier": sym, "offset": 0})
+    except Exception:
+        return None, None
+    if not (isinstance(px, list) and px and isinstance(mc, list) and mc
+            and isinstance(bs, list) and bs):
+        return None, None
+    try:
+        W = float(mc[0]["market_cap"])
+        D = float(bs[0]["total_liabilities"])
+    except (KeyError, TypeError, ValueError):
+        return None, None
+    closes = [float(r["close"]) for r in px if isinstance(r.get("close"), (int, float))]
+    return ({"firm": sym, "market_cap_W": W, "book_debt_D": D, "lrmes": lrmes}, closes)
+
+
+def systemic_panel(settings, *, firms=None, generated_at_utc: Optional[str] = None) -> dict:
+    """Live SRISK Σ capital-shortfall + per-firm + ΔCoVaR across the bank panel."""
+    import numpy as np
+
+    from cbsrm.risk import DeltaCoVaREstimator, LRMESMonteCarlo, srisk_panel
+    from wavervanir_api.providers.financialdata import index_prices
+
+    firms = firms or SYSTEMIC_BANKS
+    lrmes = float(LRMESMonteCarlo(
+        horizon_days=SRISK_PARAMS["horizon_days"], crisis_threshold=SRISK_PARAMS["crisis_threshold"],
+        n_paths=SRISK_PARAMS["n_paths"], seed=SRISK_PARAMS["seed"]).compute()["lrmes"])
+    try:
+        mrows = index_prices(settings, "^GSPC")
+        mkt = [float(r["close"]) for r in mrows if isinstance(r.get("close"), (int, float))]
+        mret = np.diff(np.log(mkt[::-1])) if len(mkt) > 2 else None
+    except Exception:
+        mret = None
+
+    inputs, covars, as_of = [], [], None
+    for sym in firms:
+        row, closes = _bank_inputs(settings, sym, lrmes)
+        if row is None:
+            continue
+        inputs.append(row)
+        if mret is not None and closes and len(closes) > 3:
+            fret = np.diff(np.log(np.array(closes[::-1])))
+            n = min(len(fret), len(mret))
+            try:
+                cv = DeltaCoVaREstimator(q=0.05).estimate(
+                    firm=sym, firm_returns=fret[-n:], system_returns=mret[-n:])
+                covars.append({"firm": sym, "name": _BANK_NAMES.get(sym, sym),
+                               "delta_covar": round(float(cv.delta_covar), 5)})
+            except Exception:
+                pass
+    if not inputs:
+        return {"available": False, "reason": "bank fundamentals unavailable"}
+
+    panel = srisk_panel(inputs, k=SRISK_PARAMS["k"])
+    per = [{"firm": r["firm"], "name": _BANK_NAMES.get(r["firm"], r["firm"]),
+            "srisk_bn": round(r["srisk"] / 1e9, 2),
+            "market_cap_bn": round(next(x["market_cap_W"] for x in inputs if x["firm"] == r["firm"]) / 1e9, 1),
+            "book_debt_bn": round(next(x["book_debt_D"] for x in inputs if x["firm"] == r["firm"]) / 1e9, 1),
+            "is_shortfall": bool(r.get("is_shortfall"))}
+           for r in panel["per_firm"]]
+    covars.sort(key=lambda c: c["delta_covar"])  # most tail-dependent first
+    return {
+        "available": True,
+        "as_of": as_of,
+        "generated_at_utc": generated_at_utc,
+        "lrmes": round(lrmes, 4),
+        "params": SRISK_PARAMS,
+        "srisk": {
+            "total_bn": round(panel["total_srisk"] / 1e9, 2),
+            "net_bn": round(panel["total_srisk_net"] / 1e9, 2),
+            "n_firms": panel["n_firms"], "n_shortfall": panel["n_shortfall"],
+            "per_firm": per,
+        },
+        "delta_covar": covars,
+        "methodology": {
+            "srisk": "SRISK (Brownlees-Engle 2017, NYU V-Lab): expected capital shortfall in a "
+                     "prolonged market crisis. SRISK = k·Debt − (1−k)·MktCap·(1−LRMES).",
+            "delta_covar": "ΔCoVaR (Adrian-Brunnermeier 2016): a firm's marginal contribution to "
+                           "system-wide tail VaR, via quantile regression.",
+            "lrmes": f"Single shared LRMES {round(lrmes, 3)} from a default GARCH-DCC sim "
+                     "(calibrated for US-financials vs S&P) applied to all firms — see caveat.",
+            "caveat": "Live read on current balance sheets — NOT a point-in-time crisis vintage. "
+                      "GARCH-DCC defaults are calibrated for US financials; treat magnitudes as "
+                      "indicative and read the ranking, not the absolute level.",
+        },
+        "disclaimer": "Systemic-risk measurement of public data — not investment advice.",
+    }

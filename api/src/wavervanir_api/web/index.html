@@ -230,9 +230,11 @@
         <select id="plWindow" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px"></select>
         <button class="btn-ghost" id="plBuild">Build governed record</button>
         <button class="btn-ghost" id="plVerify">Verify reproducibility</button>
+        <button class="btn-ghost" id="plSystemic">Systemic panel · SRISK · ΔCoVaR</button>
         <span class="small" id="plMsg"></span>
       </div>
       <div id="plResult" style="margin-top:14px"></div>
+      <div id="plSysResult" style="margin-top:14px"></div>
     </div>
 
     <div id="tab-admin" class="tabpane card hidden">
@@ -359,7 +361,7 @@ function clearPanes(){
   $("auditTable").querySelector("tbody").innerHTML="";
   $("adminUsers").querySelector("tbody").innerHTML=""; $("adminMeta").textContent=""; $("adminMsg").textContent="";
   $("pfInput").value=""; $("pfResult").innerHTML=""; $("pfMsg").textContent="";
-  $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent=""; $("plWindow").innerHTML="";
+  $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent=""; $("plWindow").innerHTML=""; $("plSysResult").innerHTML="";
 }
 $("logoutBtn").onclick = () => { store.clear(); clearPanes(); show("auth"); $("password").value=""; };
 $("refreshBtn").onclick = () => activate(currentTab());
@@ -616,32 +618,90 @@ async function loadPipeline(){
   const v = j.versions||{};
   $("plNote").textContent = (j.note||"") + "  ·  cbsrm "+v.cbsrm+" · manifest "+v.manifest+" · registry "+v.registry;
 }
-function plFeatures(feat){
-  const rows = Object.entries(feat||{}).map(([k,val]) =>
-    `<tr><td>${escHtml(k)}</td><td style="text-align:right">${typeof val==='number'?val.toFixed(2):escHtml(val)}</td></tr>`).join("");
-  return `<table style="margin-top:6px"><thead><tr><th>Feature</th><th style="text-align:right">z-score</th></tr></thead><tbody>${rows}</tbody></table>`;
+function plZBar(label, z){
+  const G="var(--good,#3fb950)",B="var(--bad,#f85149)", v=(typeof z==="number")?z:0;
+  const mag=Math.min(50, Math.abs(v)/3*50), pos=v>=0;
+  return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+    <div class="small muted" style="width:74px">${escHtml(label)}</div>
+    <div style="flex:1;height:8px;background:var(--panel);border-radius:4px;position:relative">
+      <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)"></div>
+      <div style="position:absolute;${pos?"left:50%":"right:50%"};top:0;bottom:0;width:${mag}%;background:${pos?G:B};border-radius:4px;opacity:.8"></div></div>
+    <div class="small" style="width:38px;text-align:right;color:${pos?G:B}">${(v>0?"+":"")+v}</div></div>`;
+}
+function plCard(label, value, sub){
+  return `<div style="flex:1;min-width:130px;border:1px solid var(--line);border-radius:8px;padding:10px 12px">
+    <div class="small muted" style="text-transform:uppercase;letter-spacing:.04em;font-size:9px">${escHtml(label)}</div>
+    <div style="font-size:20px;font-weight:600;margin-top:2px">${value}</div>
+    <div class="small muted" style="margin-top:1px">${escHtml(sub||"")}</div></div>`;
+}
+function plCrossCrisis(cc){
+  if(!cc||!cc.windows) return "";
+  const ws=cc.windows, row=(label,obj,f)=>`<tr><td>${escHtml(label)}</td>`+ws.map(w=>{const v=obj[w];return `<td style="text-align:right">${v==null?"—":f(v)}</td>`;}).join("")+`</tr>`;
+  return `<div class="small muted" style="margin-bottom:3px">Cross-crisis comparison</div>
+    <table><thead><tr><th>Lens</th>${ws.map(w=>`<th style="text-align:right">${escHtml(w)}</th>`).join("")}</tr></thead><tbody>
+    ${row("DebtRank",cc.debt_rank,v=>Number(v).toFixed(2))}
+    ${row("Volatility z",cc.volatility_z,v=>Number(v).toFixed(1))}
+    ${row("Regime score",cc.regime_score,v=>Number(v).toFixed(2))}</tbody></table>
+    <div class="small muted" style="margin-top:4px">2023Q1: network fragility (DebtRank) with benign macro — read network + macro together.</div>`;
 }
 async function buildPipeline(){
   const w = $("plWindow").value; if(!w) return;
-  $("plMsg").textContent="Building…"; $("plResult").innerHTML=""; $("plResult").dataset.sha="";
+  $("plMsg").textContent="Building…"; $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plSysResult").innerHTML="";
   const res = await api("/v1/desk/pipeline/"+encodeURIComponent(w));
   if(res.status===403) return gateLost();
   if(!res.ok){ $("plMsg").textContent="Record unavailable."; return; }
   const j = await res.json(); $("plMsg").textContent="";
-  const m = j.manifest||{}, h = m.hashes||{};
-  const drivers = (j.dominant_drivers||[]).map(d=>`<code>${escHtml(d)}</code>`).join(" ");
+  const m=j.manifest||{}, h=m.hashes||{}, d=j.dossier||{}, sc=d.stress_channels||{}, dr=d.debt_rank||{};
   $("plResult").dataset.sha = h.output_sha256||"";
+  const drivers=(j.dominant_drivers||[]).map(x=>`<code>${escHtml(x)}</code>`).join(" ");
+  const phaseUp=(j.phase||"").toUpperCase();
   $("plResult").innerHTML =
-    `<div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2)">
-       <div class="row"><strong>${escHtml(j.title||w)}</strong><div class="spacer"></div><span class="pill">${escHtml(j.phase||"")}</span></div>
-       <div class="small muted" style="margin-top:2px">${escHtml(j.window_label||"")} · score ${j.phase_score!=null?Number(j.phase_score).toFixed(3):"—"} · posture ${escHtml(j.risk_posture||"—")}</div>
-       <div style="margin-top:12px"><div class="small muted">Governed manifest · content-addressed · reproducible</div>
+    `<div style="border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--panel-2)">
+       <div class="row"><strong style="font-size:15px">${escHtml(j.title||w)}</strong><div class="spacer"></div>
+         <span class="pill">${escHtml(phaseUp)}</span><span class="pill" style="margin-left:6px">${escHtml((d.risk_posture||"").toUpperCase())}</span></div>
+       ${d.shock_summary?`<div class="small" style="margin-top:6px;line-height:1.5">${escHtml(d.shock_summary)}</div>`:""}
+       <div class="row" style="gap:10px;margin-top:12px;flex-wrap:wrap">
+         ${plCard("System Stress",(j.phase_score!=null?Number(j.phase_score).toFixed(2):"—"),phaseUp)}
+         ${plCard("DebtRank",(dr.value!=null?Number(dr.value).toFixed(2):"—"),"n_banks "+(dr.n_banks||"—")+(dr.converged?" · converged ✓":""))}
+         ${plCard("Macro Regime",phaseUp||"—",(d.risk_posture||"").toUpperCase())}</div>
+       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px">
+         <div><div class="small muted" style="margin-bottom:4px">System-stress channels (z)</div>
+           ${plZBar("Volatility",sc.volatility)}${plZBar("Credit",sc.credit)}${plZBar("Systemic",sc.systemic)}${plZBar("Liquidity",sc.liquidity)}
+           <div style="margin-top:8px"><div class="small muted">Dominant drivers</div><div style="margin-top:3px">${drivers||"—"}</div></div></div>
+         <div>${plCrossCrisis(j.cross_crisis)}</div></div>
+       ${d.research_notes?`<div class="small muted" style="margin-top:14px">Research note</div><div class="small" style="line-height:1.5">${escHtml(d.research_notes)}</div>`:""}
+       <div style="margin-top:14px"><div class="small muted">Governed manifest · content-addressed · reproducible</div>
          <div class="small" style="font-family:ui-monospace,Menlo,Consolas,monospace;margin-top:4px;line-height:1.7">
-           report <code>${escHtml(m.report_id||"")}</code> · manifest v${escHtml(m.manifest_version||"")}<br>
-           output_sha256 &nbsp;<code>${escHtml(h.output_sha256||"")}</code><br>
-           payload_sha256 <code>${escHtml(h.payload_sha256||"")}</code></div></div>
-       <div style="margin-top:12px"><div class="small muted">Dominant drivers</div><div style="margin-top:4px">${drivers||"—"}</div></div>
-       ${plFeatures(j.phase_features)}
+           report <code>${escHtml(m.report_id||"")}</code> · manifest v${escHtml(m.manifest_version||"")}<br>output_sha256 <code>${escHtml(h.output_sha256||"")}</code></div></div>
+     </div>`;
+}
+async function loadSystemic(){
+  $("plMsg").textContent="Computing SRISK / ΔCoVaR…"; $("plSysResult").innerHTML="";
+  const res = await api("/v1/desk/pipeline/systemic");
+  if(res.status===403) return gateLost();
+  if(!res.ok){ $("plMsg").textContent="Systemic panel unavailable."; return; }
+  const j = await res.json(); $("plMsg").textContent="";
+  if(!j.available){ $("plSysResult").innerHTML='<div class="small muted">Bank fundamentals unavailable.</div>'; return; }
+  const sk=j.srisk||{}, per=sk.per_firm||[], G="var(--good,#3fb950)", B="var(--bad,#f85149)";
+  const maxAbs=Math.max(1,...per.map(f=>Math.abs(f.srisk_bn)));
+  const bars=per.map(f=>{ const pos=f.srisk_bn>=0, mag=Math.abs(f.srisk_bn)/maxAbs*100;
+    return `<div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+      <div class="small" style="width:46px"><b>${escHtml(f.firm)}</b></div>
+      <div style="flex:1;height:14px;background:var(--panel);border-radius:3px;position:relative">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:${mag}%;background:${pos?B:G};border-radius:3px;opacity:.8"></div></div>
+      <div class="small" style="width:78px;text-align:right;color:${pos?B:G}">${(f.srisk_bn>0?"+":"")+f.srisk_bn}$bn</div></div>`; }).join("");
+  const cov=(j.delta_covar||[]).map(c=>`<tr><td><b>${escHtml(c.firm)}</b> <span class="small muted">${escHtml(c.name)}</span></td><td style="text-align:right;color:${B}">${c.delta_covar}</td></tr>`).join("");
+  const md=j.methodology||{}, p=j.params||{};
+  $("plSysResult").innerHTML =
+    `<div style="border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--panel-2)">
+       <div class="row"><strong>Live systemic capital shortfall</strong><div class="spacer"></div>
+         <span class="pill" style="border-color:${B};color:${B}">Σ SRISK +${sk.total_bn}$bn</span></div>
+       <div class="small muted" style="margin-top:2px">${sk.n_shortfall}/${sk.n_firms} in shortfall · net ${sk.net_bn}$bn · LRMES ${j.lrmes} · k ${p.k} · horizon ${p.horizon_days}d · crisis ${p.crisis_threshold} · ${p.n_paths} paths · seed ${p.seed}</div>
+       <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:18px;margin-top:14px">
+         <div><div class="small muted" style="margin-bottom:4px">SRISK — firm capital shortfall ($bn) · Brownlees-Engle · NYU V-Lab</div>${bars}</div>
+         <div><div class="small muted" style="margin-bottom:4px">ΔCoVaR — tail dependence · Adrian-Brunnermeier</div>
+           <table><thead><tr><th>Firm</th><th style="text-align:right">ΔCoVaR</th></tr></thead><tbody>${cov}</tbody></table></div></div>
+       <div class="small muted" style="margin-top:12px;line-height:1.5">${escHtml(md.caveat||"")}</div>
      </div>`;
 }
 async function verifyPipeline(){
@@ -660,6 +720,7 @@ async function verifyPipeline(){
 }
 $("plBuild").onclick = buildPipeline;
 $("plVerify").onclick = verifyPipeline;
+$("plSystemic").onclick = loadSystemic;
 async function loadAudit(){
   const res = await api("/v1/desk/audit/export");
   if(res.status===403){ $("auditMeta").textContent="Subscribe to unlock the access ledger."; $("chainPill").textContent=""; $("chainPill").className="pill"; $("auditTable").querySelector("tbody").innerHTML=""; return gateLost(); }
