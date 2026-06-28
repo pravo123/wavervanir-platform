@@ -219,6 +219,11 @@ POST /stripe/webhook                   # Stripe → entitlement sync (POST only;
 GET  /v1/admin/{users,entitlement,set-admin,audit,audit/verify}   # owner-only
 ```
 
+**MCP server (agent-callable):** the same engines are exposed as Model Context Protocol
+tools in `api/src/wavervanir_api/mcp_server.py` (`pip install -e '.[mcp]'` → `cbsrm-mcp`),
+so an institution's AI copilot can query governed systemic risk — every response carries
+the reproducibility SHA-256. See **`docs/MCP_SERVER.md`**.
+
 The flagship **SRISK panel** runs the NYU-V-Lab engines on the current major-bank panel
 (JPM/BAC/C/WFC/GS/MS): LRMES via `LRMESMonteCarlo` (a single shared LRMES, default
 GARCH-DCC, documented caveat), market cap + `balance-sheet-statements.total_liabilities` →
