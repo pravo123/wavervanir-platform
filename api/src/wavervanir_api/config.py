@@ -50,6 +50,9 @@ class Settings(BaseSettings):
 
     stripe_api_key: str = Field(default="", alias="STRIPE_API_KEY")
     stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
+    # The Desk Payment Link URL (set to the LIVE link in production). The terminal
+    # appends ``?client_reference_id=<user_id>`` so the webhook can entitle the user.
+    stripe_payment_link_desk: str = Field(default="", alias="STRIPE_PAYMENT_LINK_DESK")
 
     # ── user sign-in (JWT) — paid CBSRM Desk terminal ──
     # Signs the access/refresh tokens issued at login. MUST be rotated off the

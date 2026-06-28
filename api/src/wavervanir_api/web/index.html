@@ -365,6 +365,11 @@ function show(el){ ["auth","terminal"].forEach(id=>$(id).classList.toggle("hidde
 function _focusAuth(m){ setMode(m); $("auth").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>$("email").focus(),320); }
 $("landingTrial").onclick = () => _focusAuth("register");
 $("landingSignin").onclick = () => _focusAuth("login");
+async function _setSubLink(userId){
+  let base = "https://buy.stripe.com/6oU00iawt5DkezAbJ3g7e00"; // fallback if STRIPE_PAYMENT_LINK_DESK unset
+  try { const r = await api("/stripe/config", {auth:false}); if(r.ok){ const c = await r.json(); if(c.payment_link_desk) base = c.payment_link_desk; } } catch(e){}
+  $("subLink").href = base + (base.includes("?")?"&":"?") + "client_reference_id=" + encodeURIComponent(userId);
+}
 function enterTerminal(user){
   show("terminal");
   $("who").textContent = user.email;
@@ -377,8 +382,7 @@ function enterTerminal(user){
   // Trial CTA: offer only to never-subscribed accounts; note when a trial has lapsed.
   $("trialBtn").classList.toggle("hidden", user.status !== "inactive");
   $("trialMsg").textContent = (trialing && !entitled) ? "Your free trial has ended — subscribe to continue." : "";
-  $("subLink").href = "https://buy.stripe.com/6oU00iawt5DkezAbJ3g7e00"
-    + "?client_reference_id=" + encodeURIComponent(user.id);
+  _setSubLink(user.id);
   $("adminPill").classList.toggle("hidden", !user.is_admin);
   $("adminTab").classList.toggle("hidden", !user.is_admin);
   clearPanes();

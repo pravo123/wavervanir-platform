@@ -1,18 +1,20 @@
-"""Stripe webhook — TEST MODE ONLY in MVP.
+"""Stripe webhook — subscription → entitlement sync.
 
 Handled events:
-  * ``checkout.session.completed``     → mint key, stash raw token in
-    ``onboard_sessions`` keyed by Stripe ``session_id``. Idempotent on replay.
+  * ``checkout.session.completed``     → entitle the referenced user (``desk``
+    active) + mint an API key, stashed in ``onboard_sessions`` keyed by Stripe
+    ``session_id``. Idempotent on replay.
   * ``customer.subscription.created``  → no-op (mint already happened on checkout)
   * ``customer.subscription.updated``  → if ``metadata.plan`` changed, update
     ``ApiKey.plan`` on every key tied to the subscription.
   * ``customer.subscription.deleted``  → revoke all keys for the customer.
-  * ``invoice.payment_failed``         → mark a 3-day grace window; key stays
+  * ``invoice.payment_failed``         → mark a 3-day grace window; access stays
     active during grace (Stripe dunning handles the rest).
 
-``livemode=true`` events are refused (403). Real Stripe Products are NOT
-required for tests; the test suite signs fake payloads with the configured
-webhook secret.
+Both test- and live-mode events are processed: the Stripe-Signature HMAC (the
+webhook secret) is the security boundary, not the ``livemode`` flag. Real Stripe
+Products are not required for tests — the suite signs fake payloads with the
+configured webhook secret.
 """
 
 from __future__ import annotations
@@ -205,6 +207,20 @@ def _handle_payment_failed(event: dict, settings: Settings) -> dict:
     }
 
 
+@router.get("/config")
+def stripe_config(settings: Settings = Depends(get_settings)) -> dict:
+    """Public checkout config for the terminal — the Desk Payment Link URL.
+
+    Operator sets ``STRIPE_PAYMENT_LINK_DESK`` to the LIVE Desk Payment Link
+    (created with ``metadata[plan]=desk``). The terminal appends
+    ``?client_reference_id=<user_id>`` before redirecting. Empty until configured.
+    """
+    return {
+        "payment_link_desk": settings.stripe_payment_link_desk or "",
+        "configured": bool(settings.stripe_payment_link_desk),
+    }
+
+
 @router.post("/webhook")
 async def stripe_webhook(
     request: Request,
@@ -225,12 +241,8 @@ async def stripe_webhook(
     payload = await request.body()
     event = _verify_signature(payload, stripe_signature, settings.stripe_webhook_secret)
 
-    if event.get("livemode") is True:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="live-mode events are disabled in MVP",
-        )
-
+    # Both test- and live-mode events are processed — the verified signature above
+    # is the security boundary. (Production runs Live-mode Stripe.)
     event_type = event.get("type", "")
 
     if event_type == "checkout.session.completed":

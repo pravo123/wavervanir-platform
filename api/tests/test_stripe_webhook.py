@@ -58,14 +58,24 @@ def test_bad_signature_returns_400(client):
     assert r.status_code == 400
 
 
-def test_live_mode_event_rejected(client):
+def test_live_mode_event_is_processed(client):
+    # Production runs Live-mode Stripe, so a correctly-signed live event MUST be
+    # handled, not refused. The Stripe-Signature HMAC is the security boundary.
     settings = get_settings()
-    ev = _event("checkout.session.completed", customer="cus_x")
+    ev = _event("checkout.session.completed", id="cs_live_1", customer="cus_live")
     ev["livemode"] = True
     payload = json.dumps(ev).encode("utf-8")
     sig = _sign(payload, settings.stripe_webhook_secret)
     r = client.post("/stripe/webhook", content=payload, headers={"Stripe-Signature": sig})
-    assert r.status_code == 403
+    assert r.status_code == 200
+    assert r.json()["handled"] == "checkout.session.completed"
+
+
+def test_stripe_config_endpoint_is_public(client):
+    r = client.get("/stripe/config")
+    assert r.status_code == 200
+    body = r.json()
+    assert "payment_link_desk" in body and "configured" in body
 
 
 def test_checkout_completed_provisions_key(client):
