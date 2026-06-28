@@ -85,7 +85,8 @@ def _handle_checkout_completed(event: dict, settings: Settings) -> dict:
 
     plan = meta.get("plan") if isinstance(meta, dict) else None
     if not plan or not is_known_plan(plan):
-        plan = "researcher"
+        # No explicit metadata.plan → fall back to the deployment default (``desk``).
+        plan = settings.stripe_default_plan if is_known_plan(settings.stripe_default_plan) else "desk"
     tier = "paid" if plan != "free" else "free"
 
     # Desk terminal: link the checkout to a pre-registered user. The terminal

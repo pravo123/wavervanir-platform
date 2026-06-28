@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # The Desk Payment Link URL (set to the LIVE link in production). The terminal
     # appends ``?client_reference_id=<user_id>`` so the webhook can entitle the user.
     stripe_payment_link_desk: str = Field(default="", alias="STRIPE_PAYMENT_LINK_DESK")
+    # Plan to grant when a checkout arrives without explicit ``metadata.plan``. This
+    # deployment is the Desk terminal, so the safe default is ``desk`` — a paid
+    # checkout entitles the terminal even if the Payment Link metadata didn't carry it.
+    stripe_default_plan: str = Field(default="desk", alias="STRIPE_DEFAULT_PLAN")
 
     # ── user sign-in (JWT) — paid CBSRM Desk terminal ──
     # Signs the access/refresh tokens issued at login. MUST be rotated off the
