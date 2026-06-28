@@ -78,6 +78,35 @@
     <div class="tag" id="who"></div>
   </header>
 
+  <!-- LANDING (what we offer) -->
+  <section id="landing">
+    <style>
+      #landing .lcard{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--panel-2)}
+      #landing .lt{font-weight:600;margin-bottom:5px}
+      #landing .lb{font-size:12.5px;color:var(--muted);line-height:1.55}
+      #landing .lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px;margin:22px 0}
+    </style>
+    <div style="text-align:center;padding:30px 0 8px;border-bottom:1px solid var(--line)">
+      <div class="pill" style="margin-bottom:14px;display:inline-block">Cross-Border Systemic Risk Monitor</div>
+      <h1 style="font-size:clamp(26px,4vw,40px);max-width:20ch;margin:0 auto 14px;line-height:1.18">Systemic risk you can <span class="gold">reproduce, audit, and defend.</span></h1>
+      <p class="muted" style="max-width:64ch;margin:0 auto 20px;font-size:15px;line-height:1.6">An institutional systemic-risk terminal — live cross-asset risk, governed crisis dossiers, SRISK &amp; ΔCoVaR capital-shortfall, and a turnkey SR 26-2 model-validation binder. Every number is computed from public data, content-addressed (SHA-256), and written to a tamper-evident audit chain.</p>
+      <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="landingTrial" style="width:auto;margin:0">Start 7-day free trial →</button>
+        <button class="btn-ghost" id="landingSignin">Sign in</button>
+      </div>
+      <div class="small muted" style="margin-top:14px">Reproducible · Audit-traceable · SR 26-2 governed · No black-box forecasts</div>
+    </div>
+    <div class="lgrid">
+      <div class="lcard"><div class="lt">Live Conditions · 13 lenses</div><div class="lb">ECB CISS (US/EA/UK), Fed financial stress, yield-curve recession probability, VIX, a real Diebold–Yilmaz cross-border spillover index, HY credit spreads, fund-redemption fragility, ESG transition — each with history &amp; per-lens analytics.</div></div>
+      <div class="lcard"><div class="lt">Quant Cockpit · any symbol</div><div class="lb">Global cross-asset risk on any ticker the feed supports — world indices, FX, commodities, mega-caps, crypto. Sharpe / Sortino / annualised &amp; EWMA vol / beta / VaR &amp; CVaR / drawdown, plus a candlestick chart with projected levels &amp; a volatility cone.</div></div>
+      <div class="lcard"><div class="lt">Crisis Pipeline · governed dossiers</div><div class="lb">Reproducible crisis-window dossiers (GFC · COVID · SVB) — a system-stress gauge, DebtRank network contagion, regime classification, and a cross-crisis comparison — each a content-addressed PipelineRecord you can verify.</div></div>
+      <div class="lcard"><div class="lt">Systemic Capital Shortfall</div><div class="lb">Live SRISK Σ capital-shortfall + per-firm + ΔCoVaR across the major banks, computed with the NYU V-Lab (Brownlees-Engle) and Adrian-Brunnermeier engines from public balance sheets, market cap, and prices.</div></div>
+      <div class="lcard"><div class="lt">Model Validation · SR 26-2</div><div class="lb">A turnkey MRM binder: model inventory &amp; materiality tiering, conceptual soundness with citations, a materiality-rated assumption register, an SRISK parameter-sensitivity sweep, Monte-Carlo convergence, and an attestation block — so your model-risk function can sign off.</div></div>
+      <div class="lcard"><div class="lt">Governed &amp; auditable</div><div class="lb">Every reading is computed from public data and content-addressed (SHA-256); every sign-in and access is written to a tamper-evident hash-chained ledger. Rebuild any governed record and verify it reproduces bit-for-bit. The audit trail is the product.</div></div>
+    </div>
+    <div class="small muted" style="text-align:center;margin-bottom:20px">Desk $48,000/yr · Fund / Pro · Institution / Central-bank — start with a free 7-day trial, no card required.</div>
+  </section>
+
   <!-- AUTH -->
   <section id="auth" class="card center">
     <h1 id="authTitle">Sign in</h1>
@@ -332,7 +361,10 @@ function errText(j){
 }
 
 // ---- terminal ----
-function show(el){ ["auth","terminal"].forEach(id=>$(id).classList.toggle("hidden", id!==el)); }
+function show(el){ ["auth","terminal"].forEach(id=>$(id).classList.toggle("hidden", id!==el)); if($("landing")) $("landing").classList.toggle("hidden", el!=="auth"); }
+function _focusAuth(m){ setMode(m); $("auth").scrollIntoView({behavior:"smooth",block:"center"}); setTimeout(()=>$("email").focus(),320); }
+$("landingTrial").onclick = () => _focusAuth("register");
+$("landingSignin").onclick = () => _focusAuth("login");
 function enterTerminal(user){
   show("terminal");
   $("who").textContent = user.email;
