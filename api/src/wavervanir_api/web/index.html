@@ -119,6 +119,7 @@
 
     <div class="tabs">
       <div class="tab active" data-tab="conditions">Conditions</div>
+      <div class="tab" data-tab="riskdesk">Risk Desk</div>
       <div class="tab" data-tab="methodology">Methodology</div>
       <div class="tab" data-tab="audit">Access ledger</div>
       <div class="tab" data-tab="portfolio">Portfolio</div>
@@ -151,6 +152,22 @@
       </div>
       <div class="small muted" style="margin:0 2px 6px">Click any lens for history &amp; analytics.</div>
       <div class="grid" id="condGrid"></div>
+    </div>
+
+    <div id="tab-riskdesk" class="tabpane card hidden">
+      <div class="row small muted">
+        <span id="rdMeta">Loading…</span>
+        <div class="spacer"></div>
+        <label style="margin:0">Source</label>
+        <select id="rdSource" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px">
+          <option value="live">live</option>
+          <option value="demo">demo</option>
+        </select>
+      </div>
+      <div class="small muted" style="margin:6px 2px">US equity benchmark risk desk — SPY · DJI · IWM · QQQ.</div>
+      <div id="rdPosture" style="margin:8px 0 12px"></div>
+      <table id="rdTable"><thead><tr><th>Benchmark</th><th>Level</th><th>1d</th><th>1m</th><th>Vol 20d</th><th>vs 50-DMA</th><th>Drawdown</th><th>State</th></tr></thead><tbody></tbody></table>
+      <div class="small muted" id="rdFoot" style="margin-top:8px"></div>
     </div>
 
     <div id="tab-methodology" class="tabpane card hidden">
@@ -314,6 +331,7 @@ function clearPanes(){
   $("condGrid").innerHTML=""; $("condMeta").textContent="";
   $("methPanel").classList.add("hidden");
   $("methNote").textContent=""; $("methTable").querySelector("tbody").innerHTML="";
+  $("rdMeta").textContent=""; $("rdPosture").innerHTML=""; $("rdTable").querySelector("tbody").innerHTML=""; $("rdFoot").textContent="";
   $("auditMeta").textContent=""; $("chainPill").textContent=""; $("chainPill").className="pill";
   $("auditTable").querySelector("tbody").innerHTML="";
   $("adminUsers").querySelector("tbody").innerHTML=""; $("adminMeta").textContent=""; $("adminMsg").textContent="";
@@ -329,6 +347,7 @@ function activate(name){
   document.querySelectorAll(".tabpane").forEach(p=>p.classList.add("hidden"));
   $("tab-"+name).classList.remove("hidden");
   if(name==="conditions") loadConditions();
+  if(name==="riskdesk") loadRiskdesk();
   if(name==="methodology") loadMethodology();
   if(name==="audit") loadAudit();
   if(name==="pipeline") loadPipeline();
@@ -443,6 +462,34 @@ function openMethodology(id){
   p.scrollIntoView({block:"nearest"});
 }
 $("mpClose").onclick = () => $("methPanel").classList.add("hidden");
+// ---- US-index risk desk ----
+async function loadRiskdesk(){
+  const res = await api("/v1/desk/riskdesk?source="+$("rdSource").value);
+  if(res.status===403){ $("rdMeta").textContent="Subscribe to unlock the risk desk."; $("rdTable").querySelector("tbody").innerHTML=""; $("rdPosture").innerHTML=""; return gateLost(); }
+  if(!res.ok){ $("rdMeta").textContent="Risk desk unavailable."; return; }
+  const j = await res.json();
+  $("rdMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
+  const p = j.posture||{};
+  const G="var(--good,#3fb950)", B="var(--bad,#f85149)", A="var(--amber,#d29922)";
+  const col = p.label==="RISK-ON"?G:p.label==="RISK-OFF"?B:A;
+  $("rdPosture").innerHTML = p.label && p.label!=="unavailable"
+    ? `<span class="pill" style="border-color:${col};color:${col}">${escHtml(p.label)}</span> <span class="small muted">breadth ${escHtml(p.breadth_above_50dma||"")} above 50-DMA · avg drawdown ${p.avg_drawdown_pct}% · small-cap lead ${p.smallcap_leadership_pct!=null?(p.smallcap_leadership_pct>0?"+":"")+p.smallcap_leadership_pct+"%":"—"}</span>`
+    : "";
+  const sgn = v => (v>0?"+":"")+v;
+  const stc = s => s==="risk-on"?G:s==="risk-off"?B:A;
+  $("rdTable").querySelector("tbody").innerHTML = (j.indices||[]).map(i => i.status==="ok"
+    ? `<tr><td><b>${escHtml(i.ticker)}</b> <span class="small muted">${escHtml(i.name)}</span></td>
+         <td>${i.spot}</td>
+         <td style="color:${i.chg_1d>=0?G:B}">${sgn(i.chg_1d)}%</td>
+         <td style="color:${i.ret_21d>=0?G:B}">${sgn(i.ret_21d)}%</td>
+         <td>${i.vol_20d}%</td>
+         <td style="color:${i.vs_sma50>=0?G:B}">${sgn(i.vs_sma50)}%</td>
+         <td style="color:${i.drawdown<-5?B:A}">${i.drawdown}%</td>
+         <td><span style="color:${stc(i.state)}">${escHtml(i.state)}</span></td></tr>`
+    : `<tr><td><b>${escHtml(i.ticker)}</b> <span class="small muted">${escHtml(i.name)}</span></td><td colspan="7" class="muted">unavailable</td></tr>`).join("");
+  $("rdFoot").textContent = j.disclaimer||"";
+}
+$("rdSource").onchange = loadRiskdesk;
 // ---- governed PipelineRecord ----
 async function loadPipeline(){
   $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent="";

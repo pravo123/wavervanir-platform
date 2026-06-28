@@ -15,7 +15,7 @@ import datetime as _dt
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from wavervanir_api import desk_analytics, desk_conditions, desk_pipeline
+from wavervanir_api import desk_analytics, desk_conditions, desk_pipeline, desk_riskdesk
 from wavervanir_api.access_audit import (
     AccessKind,
     append_access_event,
@@ -102,6 +102,22 @@ def lens_analytics(
             detail={"error": "unknown_lens", "lens_id": lens_id},
         )
     return desk_analytics.lens_analytics(settings, lens_id, source=source)
+
+
+@router.get("/desk/riskdesk")
+def risk_desk(
+    source: str = Query("live", pattern="^(live|demo)$"),
+    ctx: UserContext = Depends(require_desk),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """US-index risk desk: SPY / DJI / IWM / QQQ benchmark risk metrics + posture.
+
+    Native CBSRM view (no VolanX import) — level, 1d/1m return, 20-day realised
+    vol, drawdown, trend vs the 50-DMA, and a composite breadth/risk posture,
+    computed from the financialdata.net index-prices feed. ``source=demo`` returns
+    a deterministic snapshot for offline preview.
+    """
+    return desk_riskdesk.build(source=source, settings=settings, generated_at_utc=_utc_stamp())
 
 
 # ── Governed PipelineRecord ─────────────────────────────────────────────────
