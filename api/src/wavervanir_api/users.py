@@ -15,7 +15,7 @@ FastAPI dependencies that protect routes.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -37,10 +37,23 @@ from wavervanir_api.security import (
 # the bespoke institutional / regulator tiers inherit terminal access.
 TERMINAL_PLANS = {"desk", "institutional", "regulator"}
 # Subscription statuses that still grant the terminal ("grace" = the dunning
-# window after a failed payment, during which access is retained).
+# window after a failed payment, during which access is retained). "trialing" is
+# entitled too, but only while the trial has not expired (checked separately).
 ENTITLED_STATUSES = {"active", "grace"}
 
 MIN_PASSWORD_LEN = 8
+TRIAL_DAYS = 7  # self-serve free-trial length for the Desk terminal
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _aware(dt: Optional[datetime]) -> Optional[datetime]:
+    """Treat a naive datetime (SQLite round-trips lose tz) as UTC."""
+    if dt is None:
+        return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
 # ── domain errors (routes map these to HTTP status codes) ───────────────────
@@ -66,6 +79,10 @@ class WeakPassword(AuthError):
     """Password failed the minimum-strength policy."""
 
 
+class TrialNotAllowed(AuthError):
+    """A free trial can't be started (already subscribed, or trial already used)."""
+
+
 # ── value objects ───────────────────────────────────────────────────────────
 
 
@@ -79,6 +96,7 @@ class UserContext:
     plan: str
     status: str
     is_admin: bool = False
+    trial_end: Optional[datetime] = None  # set when status == "trialing"
 
     @classmethod
     def from_user(cls, user: User) -> "UserContext":
@@ -89,6 +107,7 @@ class UserContext:
             plan=user.plan,
             status=user.status,
             is_admin=bool(user.is_admin),
+            trial_end=_aware(user.grace_until) if user.status == "trialing" else None,
         )
 
     @property
@@ -96,7 +115,19 @@ class UserContext:
         # Admins have full access to every desk function regardless of subscription.
         if self.is_admin:
             return True
-        return self.plan in TERMINAL_PLANS and self.status in ENTITLED_STATUSES
+        if self.plan not in TERMINAL_PLANS:
+            return False
+        # A trial grants access only until it expires.
+        if self.status == "trialing":
+            return self.trial_end is not None and self.trial_end > _utcnow()
+        return self.status in ENTITLED_STATUSES
+
+    @property
+    def trial_days_left(self) -> Optional[int]:
+        if self.status != "trialing" or self.trial_end is None:
+            return None
+        secs = (self.trial_end - _utcnow()).total_seconds()
+        return max(0, int(-(-secs // 86400)))  # ceil to whole days
 
 
 @dataclass(frozen=True)
@@ -290,6 +321,43 @@ class AuthService:
             session.commit()
             session.refresh(user)
             return user
+
+    def start_trial(self, *, user_id: int, days: int = TRIAL_DAYS) -> User:
+        """Grant a self-serve free trial of the Desk terminal.
+
+        One trial per account: only an ``inactive`` (never-subscribed) account may
+        start one. An already-trialing user is returned unchanged (idempotent — no
+        extension); a paying customer or a used-up trial is refused. Access ends
+        automatically at ``grace_until`` (enforced in ``UserContext.has_terminal``),
+        so no card and no sweep job are required. The grant is written to the
+        tamper-evident access ledger.
+        """
+        with Session(self._engine) as session:
+            user = self._by_id(session, user_id)
+            if user is None:
+                raise InvalidCredentials("user not found for trial")
+            if user.is_admin or (user.plan in TERMINAL_PLANS and user.status in {"active", "grace"}):
+                raise TrialNotAllowed("already_subscribed")
+            if user.status == "trialing":
+                return user  # idempotent — never extend
+            if user.status != "inactive":
+                raise TrialNotAllowed("trial_used")
+            user.plan = "desk"
+            user.status = "trialing"
+            user.grace_until = _utcnow() + timedelta(days=days)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+
+        append_access_event(
+            settings=self.settings,
+            subject=f"user:{user.id}",
+            kind=AccessKind.ACCESS_GRANTED,
+            route="/auth/start-trial",
+            payload={"status": "trialing",
+                     "trial_until": _aware(user.grace_until).isoformat()},
+        )
+        return user
 
     # -- admin provisioning (operator tooling) --------------------------------
 

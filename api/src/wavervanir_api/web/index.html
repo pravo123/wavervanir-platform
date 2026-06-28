@@ -101,11 +101,13 @@
       <div class="row">
         <div>
           <strong>No active Desk subscription.</strong>
-          <div class="small muted">Your account is created. Subscribe to unlock the live terminal.</div>
+          <div class="small muted">Start a free 7-day trial — full terminal, no card required. Or subscribe for unlimited access.</div>
         </div>
         <div class="spacer"></div>
+        <button id="trialBtn" class="btn-ghost" style="background:var(--accent);color:#fff;border-color:var(--accent);margin-right:8px">Start 7-day free trial</button>
         <a id="subLink" class="btn-ghost" style="display:inline-block" target="_blank" rel="noopener">Subscribe → $48k/yr</a>
       </div>
+      <div class="small" id="trialMsg" style="margin-top:6px"></div>
     </div>
 
     <div class="row">
@@ -315,10 +317,15 @@ function show(el){ ["auth","terminal"].forEach(id=>$(id).classList.toggle("hidde
 function enterTerminal(user){
   show("terminal");
   $("who").textContent = user.email;
-  $("planPill").textContent = user.plan + " · " + user.status;
+  const trialing = user.status === "trialing";
+  $("planPill").textContent = (trialing && user.trial_days_left!=null)
+    ? `trial · ${user.trial_days_left}d left` : (user.plan + " · " + user.status);
   $("planPill").className = "pill " + (user.has_terminal?"ok":"no");
   const entitled = !!user.has_terminal;
   $("subBanner").classList.toggle("hidden", entitled);
+  // Trial CTA: offer only to never-subscribed accounts; note when a trial has lapsed.
+  $("trialBtn").classList.toggle("hidden", user.status !== "inactive");
+  $("trialMsg").textContent = (trialing && !entitled) ? "Your free trial has ended — subscribe to continue." : "";
   $("subLink").href = "https://buy.stripe.com/6oU00iawt5DkezAbJ3g7e00"
     + "?client_reference_id=" + encodeURIComponent(user.id);
   $("adminPill").classList.toggle("hidden", !user.is_admin);
@@ -558,6 +565,16 @@ async function loadAudit(){
       <td class="mono small">${e.route||"—"}</td><td class="mono hash">${e.entry_hash.slice(0,16)}…</td></tr>`).join("");
 }
 function gateLost(){ $("subBanner").classList.remove("hidden"); }
+$("trialBtn").onclick = async () => {
+  $("trialMsg").style.color = "var(--muted)";
+  $("trialMsg").textContent = "Starting your free trial…";
+  const res = await api("/auth/start-trial", {method:"POST"});
+  const j = await res.json().catch(()=>({}));
+  if(res.ok){ enterTerminal(j); }
+  else { $("trialMsg").style.color = "var(--amber)";
+         $("trialMsg").textContent = (j.detail && j.detail.reason)
+           ? ("Trial unavailable: " + String(j.detail.reason).replace(/_/g, " ")) : "Could not start the trial."; }
+};
 
 // ---- admin ----
 async function loadAdmin(){

@@ -8,6 +8,8 @@ to status codes.
 
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 
@@ -18,6 +20,7 @@ from wavervanir_api.users import (
     AuthService,
     EmailExistsError,
     InvalidCredentials,
+    TrialNotAllowed,
     UserContext,
     WeakPassword,
     require_user,
@@ -52,6 +55,7 @@ class UserOut(BaseModel):
     status: str
     has_terminal: bool
     is_admin: bool = False
+    trial_days_left: Optional[int] = None
 
 
 class TokenResponse(BaseModel):
@@ -70,6 +74,7 @@ def _user_out(ctx: UserContext) -> UserOut:
         status=ctx.status,
         has_terminal=ctx.has_terminal,
         is_admin=ctx.is_admin,
+        trial_days_left=ctx.trial_days_left,
     )
 
 
@@ -133,3 +138,26 @@ def me(ctx: UserContext = Depends(require_user)) -> UserOut:
     # ``require_user`` reloads the user from the DB, so ``ctx`` already reflects
     # the current entitlement even if the token predates a plan change.
     return _user_out(ctx)
+
+
+@router.post("/auth/start-trial", response_model=UserOut)
+def start_trial(
+    ctx: UserContext = Depends(require_user),
+    settings: Settings = Depends(get_settings),
+) -> UserOut:
+    """Start a self-serve 7-day free trial of the Desk terminal.
+
+    One trial per account. Access is granted immediately (no card) and expires
+    automatically after 7 days. The grant is written to the access ledger.
+    """
+    svc = AuthService(settings)
+    try:
+        user = svc.start_trial(user_id=ctx.user_id)
+    except TrialNotAllowed as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={"error": "trial_not_allowed", "reason": str(exc)},
+        )
+    except InvalidCredentials:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="user not found")
+    return _user_out(UserContext.from_user(user))
