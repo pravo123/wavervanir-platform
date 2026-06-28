@@ -113,3 +113,26 @@ def test_stress_is_beta_scaled():
     risk_off = next(s for k, s in by.items() if "S&P −5%" in k)
     assert abs(risk_off["move_pct"] - (1.5 * -5.0)) < 1e-6
     assert abs(risk_off["implied_price"] - 100.0 * (1 + (1.5 * -5.0) / 100)) < 0.01
+
+
+def test_chart_has_candles_levels_and_projection():
+    import math
+
+    bars = []  # 260 newest-first OHLC bars
+    for i in range(260):
+        base = 100.0 + (260 - i) * 0.2 + 3 * math.sin(i * 0.2)
+        bars.append({"date": f"2026-{(i % 12) + 1:02d}-{(i % 28) + 1:02d}",
+                     "o": base, "h": base + 1.5, "l": base - 1.5, "c": base + 0.3})
+    var_table = [{"horizon": "5D", "confidence": "95%", "var_pct": 2.0, "cvar_pct": 3.0},
+                 {"horizon": "5D", "confidence": "99%", "var_pct": 3.5, "cvar_pct": 4.5}]
+    ch = desk_riskdesk._build_chart(bars, var_table)
+    assert 1 <= len(ch["bars"]) <= 120
+    assert all({"t", "o", "h", "l", "c"} <= set(b) for b in ch["bars"])
+    kinds = {l["kind"] for l in ch["levels"]}
+    assert {"price", "ma50", "ma200", "var95", "var99", "proj"} <= kinds
+    proj = ch["projection"]
+    assert set(proj["targets"]) == {"1w", "1m", "3m"}
+    assert len(proj["cone"]) >= 5 and proj["cone"][0]["k"] == 0
+    # 2-sigma band straddles the 1-sigma band straddles the midline
+    last = proj["cone"][-1]
+    assert last["lo2"] <= last["lo1"] <= last["mid"] <= last["hi1"] <= last["hi2"]

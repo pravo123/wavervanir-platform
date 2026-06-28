@@ -516,6 +516,46 @@ async function loadRiskdesk(){
   $("rdTable").querySelectorAll("[data-sym]").forEach(el => el.onclick = () => openSymbol(el.dataset.sym));
   $("rdFoot").textContent = j.disclaimer||"";
 }
+function candleChartSVG(ch){
+  if(!ch || !ch.bars || !ch.bars.length) return "";
+  const bars=ch.bars, n=bars.length, cone=(ch.projection&&ch.projection.cone)||[], levels=ch.levels||[];
+  const W=880,H=320,padL=6,padR=64,padT=10,padB=20;
+  const histW=(W-padL-padR)*0.74, futX=padL+histW, futW=(W-padL-padR)-histW;
+  let lo=Infinity,hi=-Infinity;
+  bars.forEach(b=>{lo=Math.min(lo,b.l);hi=Math.max(hi,b.h);});
+  levels.forEach(l=>{lo=Math.min(lo,l.price);hi=Math.max(hi,l.price);});
+  cone.forEach(c=>{lo=Math.min(lo,c.lo2);hi=Math.max(hi,c.hi2);});
+  const mg=(hi-lo)*0.06||1; lo-=mg; hi+=mg;
+  const Y=v=>padT+(H-padT-padB)*(1-(v-lo)/(hi-lo));
+  const bw=histW/n, cw=Math.max(1,Math.min(7,bw*0.62)), xBar=i=>padL+bw*(i+0.5);
+  const maxK=cone.length?cone[cone.length-1].k:63, xK=k=>futX+futW*(k/(maxK||1));
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">`;
+  if(cone.length){
+    const t2=cone.map(c=>`${xK(c.k).toFixed(1)},${Y(c.hi2).toFixed(1)}`).join(" ");
+    const b2=cone.slice().reverse().map(c=>`${xK(c.k).toFixed(1)},${Y(c.lo2).toFixed(1)}`).join(" ");
+    s+=`<polygon points="${t2} ${b2}" fill="var(--accent)" opacity="0.07"/>`;
+    const t1=cone.map(c=>`${xK(c.k).toFixed(1)},${Y(c.hi1).toFixed(1)}`).join(" ");
+    const b1=cone.slice().reverse().map(c=>`${xK(c.k).toFixed(1)},${Y(c.lo1).toFixed(1)}`).join(" ");
+    s+=`<polygon points="${t1} ${b1}" fill="var(--accent)" opacity="0.13"/>`;
+    s+=`<polyline points="${cone.map(c=>`${xK(c.k).toFixed(1)},${Y(c.mid).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>`;
+    s+=`<line x1="${futX.toFixed(1)}" y1="${padT}" x2="${futX.toFixed(1)}" y2="${H-padB}" stroke="var(--line)" stroke-dasharray="2 3"/>`;
+  }
+  const maLine=(arr,col)=>{ let p=[]; (arr||[]).forEach((v,i)=>{ if(v!=null) p.push(`${xBar(i).toFixed(1)},${Y(v).toFixed(1)}`); }); return p.length>1?`<polyline points="${p.join(" ")}" fill="none" stroke="${col}" stroke-width="1" opacity="0.85"/>`:""; };
+  s+=maLine(ch.sma200,"#a371f7")+maLine(ch.sma50,"#539bf5");
+  bars.forEach((b,i)=>{ const x=xBar(i), up=b.c>=b.o, col=up?"#3fb950":"#f85149";
+    s+=`<line x1="${x.toFixed(1)}" y1="${Y(b.h).toFixed(1)}" x2="${x.toFixed(1)}" y2="${Y(b.l).toFixed(1)}" stroke="${col}" stroke-width="1"/>`;
+    const yo=Y(b.o),yc=Y(b.c),top=Math.min(yo,yc),ht=Math.max(1,Math.abs(yc-yo));
+    s+=`<rect x="${(x-cw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${cw.toFixed(1)}" height="${ht.toFixed(1)}" fill="${col}"/>`; });
+  const lc={price:"#e6edf3",ma50:"#539bf5",ma200:"#a371f7",proj:"#8b949e",var95:"#d29922",var99:"#f85149"};
+  levels.forEach(l=>{ const y=Y(l.price), c=lc[l.kind]||"#8b949e";
+    s+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${(W-padR).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${c}" stroke-width="0.8" stroke-dasharray="${l.kind==="price"?"0":"4 3"}" opacity="0.7"/>`;
+    s+=`<rect x="${(W-padR+1).toFixed(1)}" y="${(y-7).toFixed(1)}" width="${padR-3}" height="14" fill="${c}" opacity="0.92" rx="2"/>`;
+    s+=`<text x="${(W-padR/2).toFixed(1)}" y="${(y+3.4).toFixed(1)}" font-size="8.5" text-anchor="middle" fill="#0d1117" font-family="ui-monospace,monospace">${l.price}</text>`; });
+  s+=`<text x="${padL}" y="${H-6}" font-size="9" fill="var(--muted)">${bars[0].t}</text>`;
+  s+=`<text x="${futX.toFixed(1)}" y="${H-6}" font-size="9" fill="var(--muted)" text-anchor="middle">${bars[n-1].t} · now</text>`;
+  if(ch.projection&&ch.projection.targets) s+=`<text x="${(W-padR).toFixed(1)}" y="${H-6}" font-size="9" fill="var(--muted)" text-anchor="end">3M proj ${ch.projection.targets["3m"]}</text>`;
+  return s+`</svg>`;
+}
 async function openSymbol(sym){
   sym = (sym||"").trim().toUpperCase(); if(!sym) return;
   const pn = $("rdPanel"); pn.classList.remove("hidden");
@@ -525,12 +565,15 @@ async function openSymbol(sym){
   if(res.status===404){ pn.innerHTML = '<div class="small muted">“'+escHtml(sym)+'” isn’t on the feed. Try an index (^GSPC), FX (EURUSD), commodity (GC), crypto (BTCUSD), or a US stock/ETF.</div>'; return; }
   if(!res.ok){ pn.innerHTML = '<div class="small muted">Unavailable.</div>'; return; }
   const j = await res.json(); const rd=j.risk_desk||{}, h=j.horizons||{}, tr=j.trend||{}, pv=j.provenance||{};
+  const chartHtml = j.chart ? `<div style="margin:8px 0 4px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)">${candleChartSVG(j.chart)}</div>
+     <div class="small muted" style="margin:2px 0 8px">${escHtml((j.chart.projection&&j.chart.projection.note)||"")}</div>` : "";
   const varRows = (j.var_table||[]).map(r=>`<tr><td>${r.horizon} ${r.confidence}</td><td style="text-align:right;color:${RB}">${r.var_pct}%</td><td style="text-align:right;color:${RB}">${r.cvar_pct}%</td></tr>`).join("");
   const stRows = (j.macro_stress||[]).map(r=>`<tr><td>${escHtml(r.scenario)}</td><td style="text-align:right;color:${r.move_pct>=0?RG:RB}">${rpct(r.move_pct)}</td><td style="text-align:right" class="muted">${r.implied_price}</td></tr>`).join("");
   pn.innerHTML = `
     <div class="row"><strong style="font-size:15px">${escHtml(j.symbol)}</strong> <span class="small muted">${escHtml(j.kind)} · as-of ${escHtml(j.as_of)}</span>
       <span class="pill" style="border-color:${rstc(j.state)};color:${rstc(j.state)};margin-left:8px">${escHtml(j.state)}</span>
       <div class="spacer"></div><span class="small muted">px ${j.price}</span></div>
+    ${chartHtml}
     <div class="row" style="gap:26px;margin-top:8px">
       <div><div class="small muted">1W</div><div style="color:${(h.ret_1w_pct||0)>=0?RG:RB}">${rpct(h.ret_1w_pct)}</div></div>
       <div><div class="small muted">1M</div><div style="color:${(h.ret_1m_pct||0)>=0?RG:RB}">${rpct(h.ret_1m_pct)}</div></div>

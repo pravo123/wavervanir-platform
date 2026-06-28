@@ -387,15 +387,113 @@ def _quant_read(sym: str, state: str, st: dict, var5: Optional[float]) -> str:
     return ". ".join(bits[:1]) + " — " + ", ".join(bits[1:]) + ". Risk measurement, not advice."
 
 
+def _fetch_bars(settings, symbol: str, kind: str):
+    """Newest-first OHLC bars [{date,o,h,l,c}] for a symbol, or None."""
+    from wavervanir_api.providers.financialdata import get_json, index_prices
+
+    if kind == "index":
+        rows = index_prices(settings, symbol)
+    else:
+        rows = get_json(settings, _ENDPOINT.get(kind, "stock-prices"),
+                        params={"identifier": symbol, "offset": 0})
+    if not isinstance(rows, list) or not rows:
+        return None
+    bars = []
+    for r in rows:
+        try:
+            o, h, l, c = float(r["open"]), float(r["high"]), float(r["low"]), float(r["close"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        bars.append({"date": str(r.get("date"))[:10], "o": o, "h": h, "l": l, "c": c})
+    return bars or None
+
+
+def _fetch_bars_any(settings, symbol: str):
+    for kind in _resolve_kinds(symbol):
+        try:
+            bars = _fetch_bars(settings, symbol, kind)
+        except Exception:
+            bars = None
+        if bars:
+            return bars, kind
+    return None, None
+
+
+def _build_chart(bars: list, var_table: list) -> dict:
+    """Candlestick bars + projected levels: MAs, VaR levels, and a forward
+    drift + volatility cone (statistical projection, reproducible — not a forecast)."""
+    import numpy as np
+
+    chrono = list(reversed(bars))  # oldest-first
+    closes = [b["c"] for b in chrono]
+    n = len(chrono)
+
+    def sma(i, w):
+        return None if i + 1 < w else sum(closes[i + 1 - w:i + 1]) / w
+
+    sma50 = [sma(i, 50) for i in range(n)]
+    sma200 = [sma(i, 200) for i in range(n)]
+    disp = chrono[-120:]
+    off = n - len(disp)
+    bars_out = [{"t": b["date"], "o": round(b["o"], 4), "h": round(b["h"], 4),
+                 "l": round(b["l"], 4), "c": round(b["c"], 4)} for b in disp]
+    sma50_out = [None if sma50[off + i] is None else round(sma50[off + i], 4) for i in range(len(disp))]
+    sma200_out = [None if sma200[off + i] is None else round(sma200[off + i], 4) for i in range(len(disp))]
+
+    spot = closes[-1]
+    rec = closes[-64:]
+    rets = np.diff(np.log(rec)) if len(rec) > 2 else np.array([0.0])
+    drift = float(np.mean(rets))
+    sigma = float(np.std(rets, ddof=1)) if len(rets) > 1 else 0.0
+    cone = []
+    for k in range(0, 64, 3):
+        mid = spot * math.exp(drift * k)
+        sd = sigma * math.sqrt(k)
+        cone.append({"k": k, "mid": round(mid, 4),
+                     "lo1": round(mid * math.exp(-sd), 4), "hi1": round(mid * math.exp(sd), 4),
+                     "lo2": round(mid * math.exp(-2 * sd), 4), "hi2": round(mid * math.exp(2 * sd), 4)})
+
+    def tgt(days):
+        return round(spot * math.exp(drift * days), 4)
+
+    def var_level(h, conf):
+        r = next((x for x in var_table if x["horizon"] == h and x["confidence"] == conf), None)
+        return round(spot * (1 - r["var_pct"] / 100), 4) if r else None
+
+    levels = [{"label": "Last", "price": round(spot, 4), "kind": "price"}]
+    if sma50_out and sma50_out[-1] is not None:
+        levels.append({"label": "50-DMA", "price": sma50_out[-1], "kind": "ma50"})
+    if sma200_out and sma200_out[-1] is not None:
+        levels.append({"label": "200-DMA", "price": sma200_out[-1], "kind": "ma200"})
+    levels.append({"label": "1M proj", "price": tgt(21), "kind": "proj"})
+    v95, v99 = var_level("5D", "95%"), var_level("5D", "99%")
+    if v95:
+        levels.append({"label": "5D VaR95", "price": v95, "kind": "var95"})
+    if v99:
+        levels.append({"label": "5D VaR99", "price": v99, "kind": "var99"})
+
+    return {
+        "bars": bars_out, "sma50": sma50_out, "sma200": sma200_out, "levels": levels,
+        "projection": {
+            "cone": cone, "targets": {"1w": tgt(5), "1m": tgt(21), "3m": tgt(63)},
+            "drift_daily": round(drift, 5), "vol_daily": round(sigma, 5),
+            "note": ("Projection = trailing-63d drift carried forward with a ±1σ/±2σ "
+                     "volatility cone. Statistical and reproducible — not an ML forecast."),
+        },
+    }
+
+
 def risk_profile(settings, symbol: str, *, generated_at_utc: Optional[str] = None) -> Optional[dict]:
     """Institutional single-symbol cockpit read: returns, risk-desk stats, VaR/CVaR
-    table, macro-stress scenarios, a quant read, and reproducible provenance."""
+    table, macro-stress scenarios, a candlestick chart with projected levels, a quant
+    read, and reproducible provenance."""
     sym = (symbol or "").strip().upper()
     if not sym:
         return None
-    pairs, kind = _fetch_any(settings, sym)
-    if pairs is None or len(pairs) < 51:
+    bars, kind = _fetch_bars_any(settings, sym)
+    if bars is None or len(bars) < 51:
         return None
+    pairs = [(b["date"], b["c"]) for b in bars]
     market_pairs = pairs if sym == _MARKET else _safe_fetch(settings, _MARKET, "index")
     vix_pairs = _safe_fetch(settings, "^VIX", "index")
     base = _metrics(pairs)  # spot, chg_1d, ret_21d, vol_20d, var_95_1d, drawdown, vs_sma50/200, state
@@ -428,6 +526,7 @@ def risk_profile(settings, symbol: str, *, generated_at_utc: Optional[str] = Non
         "methodology": METHODOLOGY,
         "disclaimer": METHODOLOGY["disclaimer"],
     }
+    profile["chart"] = _build_chart(bars, st["var_table"])
     profile["quant_read"] = _quant_read(sym, base["state"], st, var5_95)
     profile["output_sha256"] = sha256_of_obj(
         {k: v for k, v in profile.items() if k != "generated_at_utc"})
