@@ -318,6 +318,23 @@ def _cache_set(settings, key: str, source: str, payload_json: str) -> None:
         s.commit()
 
 
+def cache_peek(settings, source: str = "live") -> Optional[dict]:
+    """Cheap read-only look at the cached conditions snapshot for readiness checks.
+
+    Returns ``{"age_s": int, "live": int|None, "generated_at": str}`` or ``None``
+    if the cache is cold. Never rebuilds (so /health/ready stays fast)."""
+    got = _cache_get(settings, f"conditions:{source}")
+    if not got:
+        return None
+    gen_at, payload_json = got
+    age = int((_dt.datetime.now(_dt.timezone.utc) - _aware(gen_at)).total_seconds())
+    try:
+        live = json.loads(payload_json).get("summary", {}).get("live")
+    except (json.JSONDecodeError, AttributeError):
+        live = None
+    return {"age_s": age, "live": live, "generated_at": _aware(gen_at).isoformat()}
+
+
 def build_cached(*, source: str, settings, max_age_s: int = CONDITIONS_CACHE_TTL_S,
                  force: bool = False, generated_at_utc: Optional[str] = None) -> dict:
     """Return a cached conditions snapshot if fresher than ``max_age_s``, else

@@ -11,6 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from wavervanir_api import __version__
 from wavervanir_api.config import get_settings
 from wavervanir_api.db import get_engine
+from wavervanir_api.logging_config import configure_logging, get_logger
+from wavervanir_api.middleware import install_security_and_logging
 from wavervanir_api.routes import admin as admin_routes
 from wavervanir_api.routes import broker_snapshot as broker_snapshot_routes
 from wavervanir_api.routes import cbsrm as cbsrm_routes
@@ -30,6 +32,7 @@ def create_app() -> FastAPI:
     initialising the SQLite tables on first call (idempotent).
     """
     settings = get_settings()
+    configure_logging(settings)
     # Initialise tables eagerly so the first request doesn't pay the cost.
     get_engine(settings.db_url)
 
@@ -43,6 +46,11 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url=None,
     )
+
+    # Security headers on every response + request logging + a sanitised
+    # unhandled-exception handler. Wired before routers for clarity (middleware
+    # wraps the whole app regardless of registration order).
+    install_security_and_logging(app, settings)
 
     app.include_router(health_routes.router, tags=["meta"])
     app.include_router(cbsrm_routes.router, prefix="/v1/cbsrm", tags=["cbsrm"])
@@ -67,4 +75,9 @@ def create_app() -> FastAPI:
         def _root() -> RedirectResponse:
             return RedirectResponse(url="/app/")
 
+    get_logger("app").info(
+        "startup",
+        extra={"kv": {"env": settings.env, "version": __version__,
+                      "hsts": settings.hsts_enabled}},
+    )
     return app

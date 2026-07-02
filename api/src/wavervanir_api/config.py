@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     rate_limit_paid: int = Field(default=5000, alias="WAVERVANIR_RATE_LIMIT_PAID")
 
     stripe_api_key: str = Field(default="", alias="STRIPE_API_KEY")
+    # Resilience: the Render dashboard has historically been set with the var
+    # named STRIPE_SECRET_KEY. If STRIPE_API_KEY is blank, fall back to it (see
+    # the ``_stripe_key_fallback`` validator) so billing can't silently break on
+    # the naming mismatch.
+    stripe_secret_key: str = Field(default="", alias="STRIPE_SECRET_KEY")
     stripe_webhook_secret: str = Field(default="", alias="STRIPE_WEBHOOK_SECRET")
     # The Desk Payment Link URL (set to the LIVE link in production). The terminal
     # appends ``?client_reference_id=<user_id>`` so the webhook can entitle the user.
@@ -79,6 +84,27 @@ class Settings(BaseSettings):
     bullflow_api_key: str = Field(default="", alias="BULLFLOW_API_KEY")
     bullflow_data_file: str = Field(default="", alias="BULLFLOW_DATA_FILE")
     financialdata_api_key: str = Field(default="", alias="FINANCIALDATA_API_KEY")
+    # Passed through to cbsrm's FRED-backed lenses. Captured here (not just
+    # os.environ) so /health/ready can report whether the key is configured.
+    fred_api_key: str = Field(default="", alias="FRED_API_KEY")
+
+    # ── hardening / observability ──
+    # Security-response-headers middleware master switch (see middleware.py).
+    security_headers_enabled: bool = Field(
+        default=True, alias="WAVERVANIR_SECURITY_HEADERS"
+    )
+    # HSTS only makes sense over HTTPS; gated so local http dev isn't broken.
+    # render.yaml sets this true for the deployed (TLS-fronted) service.
+    hsts_enabled: bool = Field(default=False, alias="WAVERVANIR_HSTS_ENABLED")
+    # Optional ops alert webhook (Slack/Discord/generic). Blank = disabled.
+    alert_webhook_url: str = Field(default="", alias="ALERT_WEBHOOK_URL")
+    log_level: str = Field(default="INFO", alias="WAVERVANIR_LOG_LEVEL")
+
+    @model_validator(mode="after")
+    def _stripe_key_fallback(self) -> "Settings":
+        if not self.stripe_api_key and self.stripe_secret_key:
+            self.stripe_api_key = self.stripe_secret_key
+        return self
 
 
 @lru_cache(maxsize=1)
