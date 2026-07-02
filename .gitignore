@@ -48,3 +48,5 @@ _handoff/
 api/.cbsrm_cache/
 api/_smoke_*.py
 api/_serve_*.py
+api/_desk_*.py
+api/.tmp_desk_i18n/

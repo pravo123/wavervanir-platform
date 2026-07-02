@@ -6,60 +6,89 @@
 <title>CBSRM Desk — WaverVanir</title>
 <style>
   :root{
-    --bg:#0b0f15; --panel:#111824; --panel-2:#0e141d; --line:#1f2a3a;
-    --ink:#e6edf6; --muted:#8a97aa; --accent:#3A78C9; --accent-2:#5b9be0;
-    --gold:#C9A23A; --green:#3fb27f; --red:#d96a6a; --amber:#d9a441;
+    /* Refined institutional dark — an elevated "Obsidian Ledger". */
+    --bg:#0A0E16; --panel:#111827; --panel-2:#0D131F; --panel-3:#090D15;
+    --line:#1E2A3C; --line-2:#2A3B54;
+    --ink:#E7EDF6; --ink-2:#C6D1E0; --muted:#8A98AE; --dim:#647388;
+    --navy:#2B4C7E; --accent:#2B4C7E; --accent-2:#5E86BE;
+    --gold:#C9A24B; --gold-2:#E4C983; --gold-3:#96762F;
+    --good:#3FB27F; --green:#3FB27F; --bad:#D96A6A; --red:#D96A6A; --amber:#D9A441;
+    --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    -webkit-font-smoothing:antialiased;line-height:1.45}
-  a{color:var(--accent-2);text-decoration:none}
-  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  .wrap{max-width:1000px;margin:0 auto;padding:22px 18px 60px}
-  header{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);
-    padding-bottom:14px;margin-bottom:22px}
-  .mark{width:30px;height:30px;flex:none}
-  .brand{font-weight:700;letter-spacing:.3px}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;line-height:1.5;letter-spacing:.005em}
+  body::before{content:"";position:fixed;top:0;left:0;right:0;height:2px;z-index:100;
+    background:linear-gradient(90deg,transparent,var(--gold-3),var(--gold),var(--gold-2),var(--gold),var(--gold-3),transparent);opacity:.9}
+  a{color:var(--accent-2);text-decoration:none} a:hover{color:var(--ink)}
+  code,.mono{font-family:var(--mono)}
+  h1,h2,h3{font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
+  strong{font-family:var(--serif);font-weight:600}
+  .wrap{max-width:1040px;margin:0 auto;padding:26px 18px 72px}
+  header{display:flex;align-items:center;gap:13px;border-bottom:1px solid var(--line);
+    padding-bottom:15px;margin-bottom:24px;position:relative}
+  header::after{content:"";position:absolute;left:0;bottom:-1px;width:64px;height:2px;background:var(--gold);opacity:.8}
+  .mark{width:34px;height:34px;flex:none;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
+  .brand{font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:.01em;color:var(--ink)}
   .brand .gold{color:var(--gold)}
-  .tag{color:var(--muted);font-size:12px;margin-left:auto}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
-  .center{max-width:420px;margin:6vh auto 0}
-  h1{font-size:20px;margin:0 0 4px} h2{font-size:15px;margin:0 0 12px;color:var(--ink)}
+  .tag{color:var(--muted);font-size:11.5px;font-family:var(--mono);margin-left:auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px}
+  .center{max-width:430px;margin:6vh auto 0}
+  h1{font-size:22px;margin:0 0 5px;color:var(--ink)} h2{font-size:17px;margin:0 0 12px;color:var(--ink)}
   .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
-  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px}
-  input{width:100%;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);
-    border-radius:8px;color:var(--ink);font-size:14px}
-  input:focus{outline:none;border-color:var(--accent)}
-  button{cursor:pointer;font-size:14px;font-weight:600;border-radius:8px;border:1px solid transparent}
-  .btn{width:100%;padding:11px;background:var(--accent);color:#fff;margin-top:18px}
+  label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 6px}
+  input,select,textarea{width:100%;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:8px;color:var(--ink);font-size:14px;font-family:var(--sans)}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(43,76,126,.25)}
+  select{cursor:pointer} option{background:var(--panel);color:var(--ink)}
+  button{cursor:pointer;font-size:13.5px;font-weight:600;border-radius:8px;border:1px solid transparent;font-family:var(--sans)}
+  .btn{width:100%;padding:11px;background:var(--accent);color:#fff;margin-top:18px;letter-spacing:.01em;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
   .btn:hover{background:var(--accent-2)} .btn:disabled{opacity:.55;cursor:default}
-  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);padding:8px 12px;width:auto}
-  .switch{margin-top:14px;font-size:13px;color:var(--muted);text-align:center}
-  .switch a{cursor:pointer}
+  .btn-ghost{background:var(--panel-2);border:1px solid var(--line-2);color:var(--ink-2);padding:8px 13px;width:auto;font-weight:500;transition:.12s}
+  .btn-ghost:hover{border-color:var(--gold-3);color:var(--ink)}
+  .switch{margin-top:16px;font-size:13px;color:var(--muted);text-align:center}
+  .switch a{cursor:pointer;color:var(--accent-2)}
   .err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .spacer{flex:1}
-  .pill{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-  .pill.ok{color:var(--green);border-color:#1f3a2e}
-  .pill.no{color:var(--amber);border-color:#3a2f1f}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px}
-  .lens{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:13px}
-  .lens .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-  .lens .v{font-size:24px;font-weight:700;margin:6px 0 2px}
-  .lens .m{font-size:11px;color:var(--muted)}
-  .lens.bad .v{color:var(--muted);font-size:14px;font-weight:500}
-  .tabs{display:flex;gap:6px;margin:18px 0 4px;border-bottom:1px solid var(--line)}
-  .tab{padding:8px 12px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-size:13px}
-  .tab.active{color:var(--ink);border-bottom-color:var(--accent)}
-  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
-  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
-  th{color:var(--muted);font-weight:500}
-  .hash{color:var(--muted)}
-  .banner{background:#15202e;border:1px solid var(--line);border-left:3px solid var(--gold);
-    border-radius:8px;padding:14px 16px;margin-bottom:16px}
+  .pill{font-size:10.5px;padding:3px 10px;border-radius:5px;border:1px solid var(--line-2);color:var(--muted);
+    text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono)}
+  .pill.ok{color:var(--green);border-color:#265041;background:rgba(63,178,127,.07)}
+  .pill.no{color:var(--amber);border-color:#4a3c1e;background:rgba(217,164,65,.07)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px}
+  .lens{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px;transition:.12s;position:relative;overflow:hidden}
+  .lens[data-lens]:hover{border-color:var(--line-2);background:var(--panel)}
+  .lens .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
+  .lens .v{font-size:25px;font-weight:600;margin:7px 0 2px;font-family:var(--mono);letter-spacing:-.01em;color:var(--ink)}
+  .lens .m{font-size:11px;color:var(--dim);font-family:var(--mono)}
+  .lens.bad .v{color:var(--dim);font-size:14px;font-weight:500;font-family:var(--sans)}
+  .tabs{display:flex;gap:2px;margin:20px 0 4px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tab{padding:9px 14px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;font-size:12.5px;
+    letter-spacing:.02em;transition:.12s;margin-bottom:-1px}
+  .tab:hover{color:var(--ink-2)}
+  .tab.active{color:var(--ink);border-bottom-color:var(--gold);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:10.5px}
+  tbody tr:hover{background:rgba(94,134,190,.045)}
+  td .mono,td.mono,.hash{font-family:var(--mono)}
+  .hash{color:var(--dim)}
+  .banner{background:linear-gradient(180deg,rgba(201,162,75,.05),var(--panel));border:1px solid var(--line);
+    border-left:3px solid var(--gold);border-radius:8px;padding:15px 17px;margin-bottom:18px}
   .muted{color:var(--muted)} .small{font-size:12px}
   .hidden{display:none}
+  /* language switcher */
+  .lang{position:relative;display:inline-flex;align-items:center;margin-left:14px}
+  .lang select{width:auto;padding:6px 26px 6px 11px;font-size:11.5px;font-family:var(--mono);
+    background:var(--panel-2);border:1px solid var(--line-2);border-radius:7px;color:var(--ink-2)}
+  .lang select:hover{border-color:var(--gold-3);color:var(--ink)}
+  details>summary{list-style:none} details>summary::-webkit-details-marker{display:none}
+  details>summary::before{content:"▸ ";color:var(--gold);font-size:10px}
+  details[open]>summary::before{content:"▾ "}
 </style>
 </head>
 <body>
@@ -73,52 +102,58 @@
     </svg>
     <div>
       <div class="brand">Waver<span class="gold">Vanir</span> · CBSRM Desk</div>
-      <div class="small muted">Process over prediction</div>
+      <div class="small muted" data-i18n="brand.tagline">Process over prediction</div>
     </div>
     <div class="tag" id="who"></div>
+    <span class="lang"><select id="lang-sel" aria-label="Language">
+      <option value="en">EN</option><option value="ja">日本語</option><option value="es">ES</option><option value="fr">FR</option><option value="de">DE</option>
+    </select></span>
   </header>
 
   <!-- LANDING (what we offer) -->
   <section id="landing">
     <style>
-      #landing .lcard{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--panel-2)}
-      #landing .lt{font-weight:600;margin-bottom:5px}
-      #landing .lb{font-size:12.5px;color:var(--muted);line-height:1.55}
-      #landing .lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px;margin:22px 0}
+      #landing .lcard{border:1px solid var(--line);border-radius:10px;padding:17px 18px;background:var(--panel-2);transition:.15s;position:relative;overflow:hidden}
+      #landing .lcard::before{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:var(--gold);opacity:0;transition:.15s}
+      #landing .lcard:hover{border-color:var(--line-2);background:var(--panel)}
+      #landing .lcard:hover::before{opacity:.55}
+      #landing .lt{font-family:var(--serif);font-weight:600;font-size:15px;margin-bottom:6px;color:var(--ink)}
+      #landing .lb{font-size:12.5px;color:var(--muted);line-height:1.6}
+      #landing .lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px;margin:24px 0}
     </style>
     <div style="text-align:center;padding:30px 0 8px;border-bottom:1px solid var(--line)">
-      <div class="pill" style="margin-bottom:14px;display:inline-block">Cross-Border Systemic Risk Monitor</div>
-      <h1 style="font-size:clamp(26px,4vw,40px);max-width:20ch;margin:0 auto 14px;line-height:1.18">Systemic risk you can <span class="gold">reproduce, audit, and defend.</span></h1>
-      <p class="muted" style="max-width:64ch;margin:0 auto 20px;font-size:15px;line-height:1.6">An institutional systemic-risk terminal — live cross-asset risk, governed crisis dossiers, SRISK &amp; ΔCoVaR capital-shortfall, and a turnkey SR 26-2 model-validation binder. Every number is computed from public data, content-addressed (SHA-256), and written to a tamper-evident audit chain.</p>
+      <div class="pill" style="margin-bottom:14px;display:inline-block" data-i18n="land.pill">Cross-Border Systemic Risk Monitor</div>
+      <h1 style="font-size:clamp(26px,4vw,40px);max-width:20ch;margin:0 auto 14px;line-height:1.18" data-i18n="land.h1">Systemic risk you can <span class="gold">reproduce, audit, and defend.</span></h1>
+      <p class="muted" style="max-width:64ch;margin:0 auto 20px;font-size:15px;line-height:1.6" data-i18n="land.sub">An institutional systemic-risk terminal — live cross-asset risk, governed crisis dossiers, SRISK &amp; ΔCoVaR capital-shortfall, and a turnkey SR 26-2 model-validation binder. Every number is computed from public data, content-addressed (SHA-256), and written to a tamper-evident audit chain.</p>
       <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap">
-        <button class="btn" id="landingTrial" style="width:auto;margin:0">Start 7-day free trial →</button>
-        <button class="btn-ghost" id="landingSignin">Sign in</button>
+        <button class="btn" id="landingTrial" style="width:auto;margin:0" data-i18n="land.trial">Start 7-day free trial →</button>
+        <button class="btn-ghost" id="landingSignin" data-i18n="land.signin">Sign in</button>
       </div>
-      <div class="small muted" style="margin-top:14px">Reproducible · Audit-traceable · SR 26-2 governed · No black-box forecasts</div>
+      <div class="small muted" style="margin-top:14px" data-i18n="land.trust">Reproducible · Audit-traceable · SR 26-2 governed · No black-box forecasts</div>
     </div>
     <div class="lgrid">
-      <div class="lcard"><div class="lt">Live Conditions · 13 lenses</div><div class="lb">ECB CISS (US/EA/UK), Fed financial stress, yield-curve recession probability, VIX, a real Diebold–Yilmaz cross-border spillover index, HY credit spreads, fund-redemption fragility, ESG transition — each with history &amp; per-lens analytics.</div></div>
-      <div class="lcard"><div class="lt">Quant Cockpit · any symbol</div><div class="lb">Global cross-asset risk on any ticker the feed supports — world indices, FX, commodities, mega-caps, crypto. Sharpe / Sortino / annualised &amp; EWMA vol / beta / VaR &amp; CVaR / drawdown, plus a candlestick chart with projected levels &amp; a volatility cone.</div></div>
-      <div class="lcard"><div class="lt">Crisis Pipeline · governed dossiers</div><div class="lb">Reproducible crisis-window dossiers (GFC · COVID · SVB) — a system-stress gauge, DebtRank network contagion, regime classification, and a cross-crisis comparison — each a content-addressed PipelineRecord you can verify.</div></div>
-      <div class="lcard"><div class="lt">Systemic Capital Shortfall</div><div class="lb">Live SRISK Σ capital-shortfall + per-firm + ΔCoVaR across the major banks, computed with the NYU V-Lab (Brownlees-Engle) and Adrian-Brunnermeier engines from public balance sheets, market cap, and prices.</div></div>
-      <div class="lcard"><div class="lt">Model Validation · SR 26-2</div><div class="lb">A turnkey MRM binder: model inventory &amp; materiality tiering, conceptual soundness with citations, a materiality-rated assumption register, an SRISK parameter-sensitivity sweep, Monte-Carlo convergence, and an attestation block — so your model-risk function can sign off.</div></div>
-      <div class="lcard"><div class="lt">Governed &amp; auditable</div><div class="lb">Every reading is computed from public data and content-addressed (SHA-256); every sign-in and access is written to a tamper-evident hash-chained ledger. Rebuild any governed record and verify it reproduces bit-for-bit. The audit trail is the product.</div></div>
+      <div class="lcard"><div class="lt" data-i18n="land.c1.t">Live Conditions · 13 lenses</div><div class="lb" data-i18n="land.c1.b">ECB CISS (US/EA/UK), Fed financial stress, yield-curve recession probability, VIX, a real Diebold–Yilmaz cross-border spillover index, HY credit spreads, fund-redemption fragility, ESG transition — each with history &amp; per-lens analytics.</div></div>
+      <div class="lcard"><div class="lt" data-i18n="land.c2.t">Quant Cockpit · any symbol</div><div class="lb" data-i18n="land.c2.b">Global cross-asset risk on any ticker the feed supports — world indices, FX, commodities, mega-caps, crypto. Sharpe / Sortino / annualised &amp; EWMA vol / beta / VaR &amp; CVaR / drawdown, plus a candlestick chart with projected levels &amp; a volatility cone.</div></div>
+      <div class="lcard"><div class="lt" data-i18n="land.c3.t">Crisis Pipeline · governed dossiers</div><div class="lb" data-i18n="land.c3.b">Reproducible crisis-window dossiers (GFC · COVID · SVB) — a system-stress gauge, DebtRank network contagion, regime classification, and a cross-crisis comparison — each a content-addressed PipelineRecord you can verify.</div></div>
+      <div class="lcard"><div class="lt" data-i18n="land.c4.t">Systemic Capital Shortfall</div><div class="lb" data-i18n="land.c4.b">Live SRISK Σ capital-shortfall + per-firm + ΔCoVaR across the major banks, computed with the NYU V-Lab (Brownlees-Engle) and Adrian-Brunnermeier engines from public balance sheets, market cap, and prices.</div></div>
+      <div class="lcard"><div class="lt" data-i18n="land.c5.t">Model Validation · SR 26-2</div><div class="lb" data-i18n="land.c5.b">A turnkey MRM binder: model inventory &amp; materiality tiering, conceptual soundness with citations, a materiality-rated assumption register, an SRISK parameter-sensitivity sweep, Monte-Carlo convergence, and an attestation block — so your model-risk function can sign off.</div></div>
+      <div class="lcard"><div class="lt" data-i18n="land.c6.t">Governed &amp; auditable</div><div class="lb" data-i18n="land.c6.b">Every reading is computed from public data and content-addressed (SHA-256); every sign-in and access is written to a tamper-evident hash-chained ledger. Rebuild any governed record and verify it reproduces bit-for-bit. The audit trail is the product.</div></div>
     </div>
-    <div class="small muted" style="text-align:center;margin-bottom:20px">Desk $48,000/yr · Fund / Pro · Institution / Central-bank — start with a free 7-day trial, no card required.</div>
+    <div class="small muted" style="text-align:center;margin-bottom:20px" data-i18n="land.tiers">Desk $48,000/yr · Fund / Pro · Institution / Central-bank — start with a free 7-day trial, no card required.</div>
   </section>
 
   <!-- AUTH -->
   <section id="auth" class="card center">
     <h1 id="authTitle">Sign in</h1>
-    <p class="sub" id="authSub">Access the CBSRM systemic-risk terminal.</p>
+    <p class="sub" id="authSub" data-i18n="auth.sub">Access the CBSRM systemic-risk terminal.</p>
     <div id="nameWrap" class="hidden">
-      <label>Name</label>
-      <input id="name" autocomplete="name" placeholder="Jane Analyst" />
+      <label data-i18n="auth.name">Name</label>
+      <input id="name" autocomplete="name" placeholder="Jane Analyst" data-i18n-ph="auth.namePh" />
     </div>
-    <label>Email</label>
-    <input id="email" type="email" autocomplete="email" placeholder="you@institution.org" />
-    <label>Password</label>
-    <input id="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" />
+    <label data-i18n="auth.email">Email</label>
+    <input id="email" type="email" autocomplete="email" placeholder="you@institution.org" data-i18n-ph="auth.emailPh" />
+    <label data-i18n="auth.password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" data-i18n-ph="auth.passwordPh" />
     <button class="btn" id="authBtn">Sign in</button>
     <div class="err" id="authErr"></div>
     <div class="switch" id="authSwitch">New here? <a id="toRegister">Create an account</a></div>
@@ -129,41 +164,41 @@
     <div id="subBanner" class="banner hidden">
       <div class="row">
         <div>
-          <strong>No active Desk subscription.</strong>
-          <div class="small muted">Start a free 7-day trial — full terminal, no card required. Or subscribe for unlimited access.</div>
+          <strong data-i18n="ban.title">No active Desk subscription.</strong>
+          <div class="small muted" data-i18n="ban.sub">Start a free 7-day trial — full terminal, no card required. Or subscribe for unlimited access.</div>
         </div>
         <div class="spacer"></div>
-        <button id="trialBtn" class="btn-ghost" style="background:var(--accent);color:#fff;border-color:var(--accent);margin-right:8px">Start 7-day free trial</button>
-        <a id="subLink" class="btn-ghost" style="display:inline-block" target="_blank" rel="noopener">Subscribe → $48k/yr</a>
+        <button id="trialBtn" class="btn-ghost" style="background:var(--accent);color:#fff;border-color:var(--accent);margin-right:8px" data-i18n="ban.trial">Start 7-day free trial</button>
+        <a id="subLink" class="btn-ghost" style="display:inline-block" target="_blank" rel="noopener" data-i18n="ban.subscribe">Subscribe → $48k/yr</a>
       </div>
       <div class="small" id="trialMsg" style="margin-top:6px"></div>
     </div>
 
     <div class="row">
-      <h2 style="margin:0">Systemic-risk terminal</h2>
+      <h2 style="margin:0" data-i18n="term.title">Systemic-risk terminal</h2>
       <span class="pill" id="planPill"></span>
       <span class="pill ok hidden" id="adminPill">admin</span>
       <div class="spacer"></div>
-      <button class="btn-ghost" id="refreshBtn">Refresh</button>
-      <button class="btn-ghost" id="logoutBtn">Sign out</button>
+      <button class="btn-ghost" id="refreshBtn" data-i18n="term.refresh">Refresh</button>
+      <button class="btn-ghost" id="logoutBtn" data-i18n="term.signout">Sign out</button>
     </div>
 
     <div class="tabs">
-      <div class="tab active" data-tab="conditions">Conditions</div>
-      <div class="tab" data-tab="riskdesk">Risk Desk</div>
-      <div class="tab" data-tab="pipeline">Pipeline</div>
-      <div class="tab" data-tab="portfolio">Portfolio</div>
-      <div class="tab" data-tab="methodology">Methodology</div>
-      <div class="tab" data-tab="developers">Developers</div>
-      <div class="tab" data-tab="audit">Access ledger</div>
-      <div class="tab hidden" data-tab="admin" id="adminTab">Admin</div>
+      <div class="tab active" data-tab="conditions" data-i18n="tab.conditions">Conditions</div>
+      <div class="tab" data-tab="riskdesk" data-i18n="tab.riskdesk">Risk Desk</div>
+      <div class="tab" data-tab="pipeline" data-i18n="tab.pipeline">Pipeline</div>
+      <div class="tab" data-tab="portfolio" data-i18n="tab.portfolio">Portfolio</div>
+      <div class="tab" data-tab="methodology" data-i18n="tab.methodology">Methodology</div>
+      <div class="tab" data-tab="developers" data-i18n="tab.developers">Developers</div>
+      <div class="tab" data-tab="audit" data-i18n="tab.audit">Access ledger</div>
+      <div class="tab hidden" data-tab="admin" id="adminTab" data-i18n="tab.admin">Admin</div>
     </div>
 
     <div id="tab-conditions" class="tabpane card">
       <div class="row small muted">
         <span id="condMeta">Loading…</span>
         <div class="spacer"></div>
-        <label style="margin:0">Source</label>
+        <label style="margin:0" data-i18n="cond.source">Source</label>
         <select id="condSource" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px">
           <option value="live">live</option>
           <option value="demo">demo</option>
@@ -173,23 +208,23 @@
         <div class="row">
           <strong id="lpTitle"></strong>
           <div class="spacer"></div>
-          <button class="btn-ghost" id="lpClose">Close</button>
+          <button class="btn-ghost" id="lpClose" data-i18n="ui.close">Close</button>
         </div>
         <div class="row" style="gap:20px;align-items:flex-end;margin-top:6px">
-          <div><div class="small muted">current</div><div style="font-size:26px;font-weight:700" id="lpCurrent">—</div></div>
+          <div><div class="small muted" data-i18n="cond.current">current</div><div style="font-size:26px;font-weight:700" id="lpCurrent">—</div></div>
           <div class="small muted" id="lpStats"></div>
         </div>
         <div id="lpChart" style="margin-top:10px"></div>
         <div class="small muted" id="lpFoot" style="margin-top:6px"></div>
       </div>
-      <div class="small muted" style="margin:0 2px 6px">Click any lens for history &amp; analytics.</div>
+      <div class="small muted" style="margin:0 2px 6px" data-i18n="cond.clickLens">Click any lens for history &amp; analytics.</div>
       <div class="grid" id="condGrid"></div>
     </div>
 
     <div id="tab-riskdesk" class="tabpane card hidden">
       <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
-        <strong style="margin:0">Quant Cockpit</strong>
-        <span class="small muted">global cross-asset risk · any symbol the feed supports</span>
+        <strong style="margin:0" data-i18n="rd.title">Quant Cockpit</strong>
+        <span class="small muted" data-i18n="rd.sub">global cross-asset risk · any symbol the feed supports</span>
         <div class="spacer"></div>
         <select id="rdGroup" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px">
           <option value="us-benchmarks">US Benchmarks</option>
@@ -199,9 +234,9 @@
           <option value="us-megacaps">US Mega-Caps</option>
           <option value="crypto">Crypto</option>
         </select>
-        <input id="rdSearch" placeholder="any symbol — ^GSPC · EURUSD · GC · BTCUSD · AAPL" autocomplete="off"
+        <input id="rdSearch" placeholder="any symbol — ^GSPC · EURUSD · GC · BTCUSD · AAPL" autocomplete="off" data-i18n-ph="rd.searchPh"
           style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;width:230px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px" />
-        <button id="rdSearchBtn" class="btn-ghost">Analyze</button>
+        <button id="rdSearchBtn" class="btn-ghost" data-i18n="rd.analyze">Analyze</button>
         <select id="rdSource" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px">
           <option value="live">live</option>
           <option value="demo">demo</option>
@@ -209,9 +244,9 @@
       </div>
       <div class="row small muted" style="margin:8px 2px 6px"><span id="rdMeta">Loading…</span><div class="spacer"></div><span id="rdPosture"></span></div>
       <table id="rdTable"><thead><tr>
-        <th>Instrument</th><th style="text-align:right">Level</th><th style="text-align:right">1D</th><th style="text-align:right">1M</th>
-        <th style="text-align:right">Vol 20d</th><th style="text-align:right">VaR 95%</th><th style="text-align:right">β S&amp;P</th>
-        <th style="text-align:right">Drawdown</th><th style="text-align:right">vs 200-DMA</th><th style="text-align:center">State</th>
+        <th data-i18n="rd.h.instrument">Instrument</th><th style="text-align:right" data-i18n="rd.h.level">Level</th><th style="text-align:right">1D</th><th style="text-align:right">1M</th>
+        <th style="text-align:right" data-i18n="rd.h.vol">Vol 20d</th><th style="text-align:right">VaR 95%</th><th style="text-align:right">β S&amp;P</th>
+        <th style="text-align:right" data-i18n="rd.h.drawdown">Drawdown</th><th style="text-align:right">vs 200-DMA</th><th style="text-align:center" data-i18n="rd.h.state">State</th>
       </tr></thead><tbody></tbody></table>
       <div class="small muted" id="rdFoot" style="margin-top:8px"></div>
       <div id="rdPanel" class="hidden" style="border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:14px;background:var(--panel-2)"></div>
@@ -223,19 +258,19 @@
         <div class="row">
           <strong id="mpTitle"></strong>
           <div class="spacer"></div>
-          <button class="btn-ghost" id="mpHistory" style="margin-right:8px">See live history &amp; analytics →</button>
-          <button class="btn-ghost" id="mpClose">Close</button>
+          <button class="btn-ghost" id="mpHistory" style="margin-right:8px" data-i18n="meth.history">See live history &amp; analytics →</button>
+          <button class="btn-ghost" id="mpClose" data-i18n="ui.close">Close</button>
         </div>
         <div class="small muted" id="mpSub" style="margin-top:2px"></div>
         <div id="mpBody" style="margin-top:12px"></div>
       </div>
-      <div class="small muted" style="margin:6px 2px 6px">Click any lens for its full methodology.</div>
-      <table id="methTable"><thead><tr><th>Lens</th><th>Family</th><th>Unit</th><th>Source</th></tr></thead><tbody></tbody></table>
+      <div class="small muted" style="margin:6px 2px 6px" data-i18n="meth.clickLens">Click any lens for its full methodology.</div>
+      <table id="methTable"><thead><tr><th data-i18n="meth.h.lens">Lens</th><th data-i18n="meth.h.family">Family</th><th data-i18n="meth.h.unit">Unit</th><th data-i18n="meth.h.source">Source</th></tr></thead><tbody></tbody></table>
     </div>
 
     <div id="tab-developers" class="tabpane card hidden">
-      <div style="font-size:18px;font-weight:600;margin-bottom:4px">Agent-callable systemic risk</div>
-      <div class="small muted" style="margin-bottom:14px;max-width:760px">
+      <div style="font-size:18px;margin-bottom:4px" data-i18n="dev.h1"><strong>Agent-callable systemic risk</strong></div>
+      <div class="small muted" style="margin-bottom:14px;max-width:760px" data-i18n="dev.intro">
         The same engines behind this terminal are exposed as <b>Model Context Protocol (MCP)</b>
         tools, so your AI copilot — Claude Desktop, a custom agent, any MCP client — can query
         governed systemic risk directly. <b>Every response carries a reproducibility SHA-256 + provenance</b>,
@@ -246,7 +281,7 @@
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
         <div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2)">
-          <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Install &amp; run</div>
+          <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px" data-i18n="dev.install">Install &amp; run</div>
           <pre style="margin:0;background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:var(--ink)">cd api
 pip install -e '.[mcp]'
 cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></pre>
@@ -258,7 +293,7 @@ cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></
         </div>
 
         <div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2)">
-          <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Claude Desktop config</div>
+          <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px" data-i18n="dev.config">Claude Desktop config</div>
           <pre style="margin:0;background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:var(--ink)">{
   "mcpServers": {
     "cbsrm-systemic-risk": {
@@ -270,7 +305,7 @@ cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></
         </div>
       </div>
 
-      <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px">Tools</div>
+      <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px" data-i18n="dev.tools">Tools</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <thead><tr>
           <th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--muted);font-weight:600;font-family:ui-monospace,Menlo,Consolas,monospace">tool</th>
@@ -280,7 +315,7 @@ cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></
       </table>
 
       <div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2);margin-top:16px">
-        <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Every response is governed</div>
+        <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px" data-i18n="dev.governed">Every response is governed</div>
         <pre style="margin:0;background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:var(--ink)">"_governance": {
   "reproducible": true,
   "sha256": "…",
@@ -301,15 +336,15 @@ cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></
         <div class="spacer"></div>
         <span class="pill" id="chainPill"></span>
       </div>
-      <table id="auditTable"><thead><tr><th>#</th><th>When (UTC)</th><th>Event</th><th>Route</th><th>Entry hash</th></tr></thead><tbody></tbody></table>
+      <table id="auditTable"><thead><tr><th>#</th><th data-i18n="aud.h.when">When (UTC)</th><th data-i18n="aud.h.event">Event</th><th data-i18n="aud.h.route">Route</th><th data-i18n="aud.h.hash">Entry hash</th></tr></thead><tbody></tbody></table>
     </div>
 
     <div id="tab-portfolio" class="tabpane card hidden">
-      <div class="small muted" style="margin-bottom:8px">Paste a <b>sanitized</b> broker snapshot (positions only — no account numbers or tokens) and analyze portfolio risk. Anything that looks like a credential is rejected.</div>
+      <div class="small muted" style="margin-bottom:8px" data-i18n="pf.instructions">Paste a <b>sanitized</b> broker snapshot (positions only — no account numbers or tokens) and analyze portfolio risk. Anything that looks like a credential is rejected.</div>
       <textarea id="pfInput" spellcheck="false" placeholder='{"schema_version":"1.0","snapshot_ts":"…","account_alias":"…","positions":[…]}' style="width:100%;height:120px;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px"></textarea>
       <div class="row" style="gap:8px;margin-top:8px">
-        <button class="btn-ghost" id="pfSample">Load sample</button>
-        <button class="btn-ghost" id="pfRun">Analyze risk</button>
+        <button class="btn-ghost" id="pfSample" data-i18n="pf.loadSample">Load sample</button>
+        <button class="btn-ghost" id="pfRun" data-i18n="pf.analyzeBtn">Analyze risk</button>
         <span class="small" id="pfMsg"></span>
       </div>
       <div id="pfResult" style="margin-top:14px"></div>
@@ -318,12 +353,12 @@ cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></
     <div id="tab-pipeline" class="tabpane card hidden">
       <div class="small muted" id="plNote">Governed, reproducible records of the CBSRM macro-composite pipeline for crisis windows — each content-addressed and verifiable.</div>
       <div class="row" style="gap:8px;margin-top:10px;align-items:center">
-        <label style="margin:0">Window</label>
+        <label style="margin:0" data-i18n="pl.window">Window</label>
         <select id="plWindow" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px"></select>
-        <button class="btn-ghost" id="plBuild">Build governed record</button>
-        <button class="btn-ghost" id="plVerify">Verify reproducibility</button>
-        <button class="btn-ghost" id="plSystemic">Systemic panel · SRISK · ΔCoVaR</button>
-        <button class="btn-ghost" id="plValidation">Model Validation · SR 26-2</button>
+        <button class="btn-ghost" id="plBuild" data-i18n="pl.build">Build governed record</button>
+        <button class="btn-ghost" id="plVerify" data-i18n="pl.verify">Verify reproducibility</button>
+        <button class="btn-ghost" id="plSystemic" data-i18n="pl.systemic">Systemic panel · SRISK · ΔCoVaR</button>
+        <button class="btn-ghost" id="plValidation" data-i18n="pl.validation">Model Validation · SR 26-2</button>
         <span class="small" id="plMsg"></span>
       </div>
       <div id="plResult" style="margin-top:14px"></div>
@@ -335,13 +370,13 @@ cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></
       <div class="row">
         <span class="small muted" id="adminMeta">Loading…</span>
         <div class="spacer"></div>
-        <button class="btn-ghost" id="verifyBtn">Verify ledger</button>
+        <button class="btn-ghost" id="verifyBtn" data-i18n="adm.verifyLedger">Verify ledger</button>
       </div>
-      <table id="adminUsers"><thead><tr><th>Email</th><th>Plan</th><th>Status</th><th>Admin</th><th></th></tr></thead><tbody></tbody></table>
+      <table id="adminUsers"><thead><tr><th data-i18n="adm.h.email">Email</th><th data-i18n="adm.h.plan">Plan</th><th data-i18n="adm.h.status">Status</th><th data-i18n="adm.h.admin">Admin</th><th></th></tr></thead><tbody></tbody></table>
       <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
-        <div class="small muted" style="margin-bottom:8px">Grant / change entitlement</div>
+        <div class="small muted" style="margin-bottom:8px" data-i18n="adm.grant">Grant / change entitlement</div>
         <div class="row" style="gap:8px">
-          <input id="grantEmail" placeholder="user@institution.org" style="flex:2;min-width:150px" />
+          <input id="grantEmail" placeholder="user@institution.org" data-i18n-ph="adm.emailPh" style="flex:2;min-width:150px" />
           <select id="grantPlan" style="background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px">
             <option value="desk">desk</option><option value="institutional">institutional</option>
             <option value="regulator">regulator</option><option value="pro">pro</option>
@@ -351,7 +386,7 @@ cbsrm-mcp            <span style="color:var(--muted)"># stdio transport</span></
             <option value="active">active</option><option value="inactive">inactive</option>
             <option value="revoked">revoked</option><option value="grace">grace</option>
           </select>
-          <button class="btn-ghost" id="grantBtn">Apply</button>
+          <button class="btn-ghost" id="grantBtn" data-i18n="adm.apply">Apply</button>
         </div>
         <div class="small" id="adminMsg" style="margin-top:8px"></div>
       </div>
@@ -368,6 +403,87 @@ const store = {
   clear(){localStorage.removeItem("cbsrm_access");localStorage.removeItem("cbsrm_refresh")}
 };
 let mode = "login";
+let _lastUser = null;
+
+// ---- i18n (en · ja · es · fr · de) — mirrors cbsrm.i18n SUPPORTED_LOCALES ----
+// Static HTML strings are tagged [data-i18n]/[data-i18n-ph] and captured from the
+// DOM below. JS-set UI strings live under js.* here. Financial index names and
+// API-provided analysis stay in English (institutional-terminal convention).
+const I18N = { en:{}, ja:{"brand.tagline":"予測よりもプロセスを","land.pill":"クロスボーダー・システミック・リスク・モニター","land.h1":"<span class=\"gold\">再現・監査・立証</span>できるシステミック・リスク。","land.sub":"機関投資家向けシステミック・リスク・ターミナル — ライブのクロスアセット・リスク、統制されたクライシス・ドシエ、SRISK &amp; ΔCoVaR による資本不足額、そしてターンキーの SR 26-2 モデル検証バインダー。すべての数値は公開データから算出され、コンテンツアドレス化（SHA-256）され、改竄検知可能な監査チェーンに記録されます。","land.trial":"7日間の無料トライアルを開始 →","land.signin":"サインイン","land.trust":"再現可能 · 監査追跡可能 · SR 26-2 準拠 · ブラックボックス予測なし","land.c1.t":"ライブ・コンディション · 13の観点","land.c1.b":"ECB CISS（米国／ユーロ圏／英国）、Fed 金融ストレス、イールドカーブによる景気後退確率、VIX、本格的な Diebold–Yilmaz クロスボーダー波及指数、ハイイールド信用スプレッド、ファンド解約脆弱性、ESG 移行 — それぞれ履歴 &amp; 観点別分析を備えています。","land.c2.t":"クオンツ・コックピット · 任意の銘柄","land.c2.b":"フィードが対応する任意のティッカーでグローバルなクロスアセット・リスクを — 世界の指数、FX、コモディティ、メガキャップ、暗号資産。Sharpe／Sortino／年率化 &amp; EWMA ボラティリティ／ベータ／VaR &amp; CVaR／ドローダウン、加えて予測水準 &amp; ボラティリティ・コーンを備えたローソク足チャート。","land.c3.t":"クライシス・パイプライン · 統制されたドシエ","land.c3.b":"再現可能なクライシス・ウィンドウ・ドシエ（GFC · COVID · SVB） — システム・ストレス指標、DebtRank ネットワーク波及、レジーム分類、クロス・クライシス比較 — それぞれ検証可能なコンテンツアドレス化された PipelineRecord です。","land.c4.t":"システミック資本不足額","land.c4.b":"主要銀行を横断するライブの SRISK Σ 資本不足額 + 個別行 + ΔCoVaR。NYU V-Lab（Brownlees-Engle）および Adrian-Brunnermeier エンジンにより、公開バランスシート、時価総額、価格から算出します。","land.c5.t":"モデル検証 · SR 26-2","land.c5.b":"ターンキーの MRM バインダー：モデル・インベントリ &amp; 重要度階層化、引用付きの概念的妥当性、重要度評価付き前提条件レジスター、SRISK パラメータ感応度スイープ、モンテカルロ収束、そして表明ブロック — 御社のモデル・リスク部門が承認できるよう構成されています。","land.c6.t":"統制 &amp; 監査可能","land.c6.b":"すべての測定値は公開データから算出され、コンテンツアドレス化（SHA-256）されます。すべてのサインインとアクセスは改竄検知可能なハッシュチェーン台帳に記録されます。統制された記録を再構築し、ビット単位で再現することを検証できます。監査証跡そのものが製品です。","land.tiers":"Desk $48,000/yr · Fund／Pro · Institution／中央銀行 — まずは7日間の無料トライアルから。カード不要。","auth.sub":"CBSRM システミック・リスク・ターミナルにアクセスします。","auth.name":"氏名","auth.email":"メールアドレス","auth.password":"パスワード","ban.title":"有効な Desk サブスクリプションがありません。","ban.sub":"7日間の無料トライアルを開始 — フル機能のターミナル、カード不要。または無制限アクセスにご登録ください。","ban.trial":"7日間の無料トライアルを開始","ban.subscribe":"登録 → $48k/yr","term.title":"システミック・リスク・ターミナル","term.refresh":"更新","term.signout":"サインアウト","tab.conditions":"コンディション","tab.riskdesk":"リスク・デスク","tab.pipeline":"パイプライン","tab.portfolio":"ポートフォリオ","tab.methodology":"方法論","tab.developers":"開発者","tab.audit":"アクセス台帳","tab.admin":"管理","cond.source":"ソース","ui.close":"閉じる","cond.current":"現在値","cond.clickLens":"任意の観点をクリックすると履歴 &amp; 分析を表示します。","rd.title":"クオンツ・コックピット","rd.sub":"グローバルなクロスアセット・リスク · フィードが対応する任意の銘柄","rd.analyze":"分析","rd.h.instrument":"銘柄","rd.h.level":"水準","rd.h.vol":"Vol 20d","rd.h.drawdown":"ドローダウン","rd.h.state":"状態","meth.history":"ライブ履歴 &amp; 分析を見る →","meth.clickLens":"任意の観点をクリックすると完全な方法論を表示します。","meth.h.lens":"観点","meth.h.family":"分類","meth.h.unit":"単位","meth.h.source":"ソース","dev.h1":"<strong>エージェントから呼び出せるシステミック・リスク</strong>","dev.intro":"\n        本ターミナルを支える同一のエンジンを <b>Model Context Protocol (MCP)</b>\n        ツールとして公開しており、御社の AI コパイロット — Claude Desktop、カスタム・エージェント、任意の MCP クライアント — から\n        統制されたシステミック・リスクを直接照会できます。<b>すべての応答は再現性のための SHA-256 + 出所情報を伴います</b>ので、\n        エージェントの回答はコンテンツアドレス化され監査追跡可能です — 規制対象の\n        機関が LLM にリスク数値を扱わせる際に生じる信頼のギャップを埋めます。公開された\n        <span style=\"font-family:ui-monospace,Menlo,Consolas,monospace\">cbsrm</span> 方法論のみから算出されます。\n      ","dev.install":"インストール &amp; 実行","dev.config":"Claude Desktop 設定","dev.tools":"ツール","dev.governed":"すべての応答は統制されています","aud.h.when":"日時（UTC）","aud.h.event":"イベント","aud.h.route":"ルート","aud.h.hash":"エントリ・ハッシュ","pf.instructions":"<b>サニタイズ済み</b>のブローカー・スナップショット（ポジションのみ — 口座番号やトークンは含めないこと）を貼り付けてポートフォリオ・リスクを分析します。認証情報とみなされるものは拒否されます。","pf.loadSample":"サンプルを読み込む","pf.analyzeBtn":"リスクを分析","pl.window":"ウィンドウ","pl.build":"統制された記録を構築","pl.verify":"再現性を検証","pl.systemic":"システミック・パネル · SRISK · ΔCoVaR","pl.validation":"モデル検証 · SR 26-2","adm.verifyLedger":"台帳を検証","adm.h.email":"メールアドレス","adm.h.plan":"プラン","adm.h.status":"ステータス","adm.h.admin":"管理者","adm.grant":"権限の付与／変更","adm.apply":"適用","ph.auth.namePh":"Jane Analyst","ph.auth.emailPh":"you@institution.org","ph.auth.passwordPh":"8文字以上","ph.rd.searchPh":"任意の銘柄 — ^GSPC · EURUSD · GC · BTCUSD · AAPL","ph.adm.emailPh":"user@institution.org","js.auth.signinTitle":"サインイン","js.auth.registerTitle":"アカウントを作成","js.auth.signinBtn":"サインイン","js.auth.registerBtn":"アカウントを作成","js.auth.toRegister":"アカウントを作成","js.auth.toLogin":"サインイン","js.auth.newHere":"はじめてですか？","js.auth.haveAccount":"アカウントをお持ちですか？","js.loading":"読み込み中…","js.unavailable":"利用不可","js.trialEnded":"無料トライアルが終了しました — 継続するにはご登録ください。","js.trialLeft":"トライアル · 残り{n}日","js.gate.conditions":"ライブ・コンディションを利用するにはご登録ください。","js.gate.cockpit":"コックピットを利用するにはご登録ください。","js.gate.cockpitUnavail":"コックピットは利用できません。","js.gate.methodology":"方法論カタログを利用するにはご登録ください。","js.gate.pipeline":"統制された PipelineRecord を利用するにはご登録ください。","js.gate.catalog":"カタログは利用できません。","js.gate.audit":"アクセス台帳を利用するにはご登録ください。","js.gate.recordUnavail":"記録は利用できません。","js.gate.systemicUnavail":"システミック・パネルは利用できません。","js.gate.validationUnavail":"検証パッケージは利用できません。","js.verify.building":"構築中…","js.verify.verifying":"検証中…","js.verify.ok":"✓ 再現完了 — output_sha256 が一致し、決定論的な再構築を確認しました（アクセス台帳に記録済み）","js.verify.fail":"✗ 不一致 — 記録を再現できませんでした","js.verify.failed":"検証に失敗しました。","js.sys.computing":"SRISK／ΔCoVaR を計算中…","js.val.building":"SR 26-2 検証パッケージを構築中…","js.trial.starting":"無料トライアルを開始中…","js.trial.unavailable":"トライアルは利用できません：","js.trial.couldnot":"トライアルを開始できませんでした。","js.admin.only":"管理者専用です。","js.admin.enterEmail":"メールアドレスを入力してください。","js.pf.analyzing":"分析中…","js.pf.notJson":"有効な JSON ではありません。","js.pf.positions":"ポジション数","js.pf.gross":"グロス・エクスポージャー","js.pf.net":"ネット（ロング − ショート）","js.pf.upnl":"未実現損益","js.pf.largest":"最大ポジション","js.pf.top5":"上位5銘柄の集中度","js.pf.assetClass":"資産クラス","js.pf.grossCol":"グロス","js.pf.netCol":"ネット","js.pf.sanitized":"サニタイズ済みスナップショット","js.net":"ネット"}, es:{"brand.tagline":"Proceso antes que predicción","land.pill":"Monitor de riesgo sistémico transfronterizo","land.h1":"Riesgo sistémico que puede <span class=\"gold\">reproducir, auditar y defender.</span>","land.sub":"Un tablero institucional de riesgo sistémico — riesgo multiactivo en tiempo real, dosieres de crisis gobernados, déficit de capital SRISK &amp; ΔCoVaR y un dosier de validación de modelos SR 26-2 llave en mano. Cada cifra se calcula a partir de datos públicos, se direcciona por contenido (SHA-256) y se registra en una cadena de auditoría a prueba de manipulaciones.","land.trial":"Iniciar prueba gratuita de 7 días →","land.signin":"Iniciar sesión","land.trust":"Reproducible · Trazable en auditoría · Gobernado por SR 26-2 · Sin pronósticos de caja negra","land.c1.t":"Condiciones en vivo · 13 lentes","land.c1.b":"ECB CISS (US/EA/UK), estrés financiero de la Fed, probabilidad de recesión de la curva de tipos, VIX, un índice real de contagio transfronterizo Diebold–Yilmaz, diferenciales de crédito HY, fragilidad de reembolsos de fondos, transición ESG — cada uno con histórico &amp; analítica por lente.","land.c2.t":"Cabina Cuantitativa · cualquier símbolo","land.c2.b":"Riesgo multiactivo global sobre cualquier ticker que soporte el feed — índices mundiales, FX, materias primas, megacapitalizaciones, cripto. Sharpe / Sortino / vol anualizada &amp; EWMA / beta / VaR &amp; CVaR / drawdown, más un gráfico de velas con niveles proyectados &amp; un cono de volatilidad.","land.c3.t":"Pipeline de crisis · dosieres gobernados","land.c3.b":"Dosieres reproducibles de ventanas de crisis (GFC · COVID · SVB) — un indicador de estrés del sistema, contagio de red DebtRank, clasificación de regímenes y una comparación entre crisis — cada uno un PipelineRecord direccionado por contenido que puede verificar.","land.c4.t":"Déficit de capital sistémico","land.c4.b":"Déficit de capital SRISK Σ en vivo + por firma + ΔCoVaR de los principales bancos, calculado con los motores de NYU V-Lab (Brownlees-Engle) y Adrian-Brunnermeier a partir de datos públicos de balances, capitalización de mercado y precios.","land.c5.t":"Validación de modelos · SR 26-2","land.c5.b":"Un dosier de MRM llave en mano: inventario de modelos &amp; niveles de materialidad, solidez conceptual con citas, un registro de supuestos con calificación de materialidad, un barrido de sensibilidad de parámetros SRISK, convergencia de Monte-Carlo y un bloque de atestación — para que su función de riesgo de modelos pueda dar el visto bueno.","land.c6.t":"Gobernado &amp; auditable","land.c6.b":"Cada lectura se calcula a partir de datos públicos y se direcciona por contenido (SHA-256); cada inicio de sesión y acceso se registra en un libro encadenado por hash a prueba de manipulaciones. Reconstruya cualquier registro gobernado y verifique que se reproduce bit a bit. La traza de auditoría es el producto.","land.tiers":"Desk $48,000/yr · Fund / Pro · Institution / Central-bank — comience con una prueba gratuita de 7 días, sin tarjeta requerida.","auth.sub":"Acceda al tablero de riesgo sistémico CBSRM.","auth.name":"Nombre","auth.email":"Correo electrónico","auth.password":"Contraseña","ban.title":"Sin suscripción Desk activa.","ban.sub":"Inicie una prueba gratuita de 7 días — tablero completo, sin tarjeta requerida. O suscríbase para acceso ilimitado.","ban.trial":"Iniciar prueba gratuita de 7 días","ban.subscribe":"Suscribirse → $48k/yr","term.title":"Tablero de riesgo sistémico","term.refresh":"Actualizar","term.signout":"Cerrar sesión","tab.conditions":"Condiciones","tab.riskdesk":"Mesa de riesgo","tab.pipeline":"Pipeline","tab.portfolio":"Cartera","tab.methodology":"Metodología","tab.developers":"Desarrolladores","tab.audit":"Libro de accesos","tab.admin":"Administración","cond.source":"Fuente","ui.close":"Cerrar","cond.current":"actual","cond.clickLens":"Haga clic en cualquier lente para ver histórico &amp; analítica.","rd.title":"Cabina Cuantitativa","rd.sub":"riesgo multiactivo global · cualquier símbolo que soporte el feed","rd.analyze":"Analizar","rd.h.instrument":"Instrumento","rd.h.level":"Nivel","rd.h.vol":"Vol 20d","rd.h.drawdown":"Drawdown","rd.h.state":"Estado","meth.history":"Ver histórico &amp; analítica en vivo →","meth.clickLens":"Haga clic en cualquier lente para ver su metodología completa.","meth.h.lens":"Lente","meth.h.family":"Familia","meth.h.unit":"Unidad","meth.h.source":"Fuente","dev.h1":"<strong>Riesgo sistémico invocable por agentes</strong>","dev.intro":"\n        Los mismos motores que respaldan este tablero se exponen como herramientas <b>Model Context Protocol (MCP)</b>,\n        para que su copiloto de IA — Claude Desktop, un agente personalizado, cualquier cliente MCP — pueda consultar\n        el riesgo sistémico gobernado directamente. <b>Cada respuesta lleva un SHA-256 de reproducibilidad + procedencia</b>,\n        de modo que la respuesta de un agente queda direccionada por contenido y es trazable en auditoría — la brecha de confianza que una\n        institución regulada tiene cuando permite que un LLM toque cifras de riesgo. Calculado únicamente a partir de la metodología pública\n        <span style=\"font-family:ui-monospace,Menlo,Consolas,monospace\">cbsrm</span>.\n      ","dev.install":"Instalar &amp; ejecutar","dev.config":"Configuración de Claude Desktop","dev.tools":"Herramientas","dev.governed":"Cada respuesta está gobernada","aud.h.when":"Cuándo (UTC)","aud.h.event":"Evento","aud.h.route":"Ruta","aud.h.hash":"Hash de entrada","pf.instructions":"Pegue una instantánea <b>saneada</b> del bróker (solo posiciones — sin números de cuenta ni tokens) y analice el riesgo de la cartera. Todo lo que parezca una credencial es rechazado.","pf.loadSample":"Cargar ejemplo","pf.analyzeBtn":"Analizar riesgo","pl.window":"Ventana","pl.build":"Construir registro gobernado","pl.verify":"Verificar reproducibilidad","pl.systemic":"Panel sistémico · SRISK · ΔCoVaR","pl.validation":"Validación de modelos · SR 26-2","adm.verifyLedger":"Verificar libro","adm.h.email":"Correo electrónico","adm.h.plan":"Plan","adm.h.status":"Estado","adm.h.admin":"Admin","adm.grant":"Conceder / cambiar derecho de acceso","adm.apply":"Aplicar","ph.auth.namePh":"Jane Analyst","ph.auth.emailPh":"you@institution.org","ph.auth.passwordPh":"Al menos 8 caracteres","ph.rd.searchPh":"cualquier símbolo — ^GSPC · EURUSD · GC · BTCUSD · AAPL","ph.adm.emailPh":"user@institution.org","js.auth.signinTitle":"Iniciar sesión","js.auth.registerTitle":"Cree su cuenta","js.auth.signinBtn":"Iniciar sesión","js.auth.registerBtn":"Crear cuenta","js.auth.toRegister":"Crear una cuenta","js.auth.toLogin":"Iniciar sesión","js.auth.newHere":"¿Nuevo aquí?","js.auth.haveAccount":"¿Ya tiene una cuenta?","js.loading":"Cargando…","js.unavailable":"no disponible","js.trialEnded":"Su prueba gratuita ha terminado — suscríbase para continuar.","js.trialLeft":"prueba · quedan {n}d","js.gate.conditions":"Suscríbase para desbloquear las condiciones en vivo.","js.gate.cockpit":"Suscríbase para desbloquear la cabina.","js.gate.cockpitUnavail":"Cabina no disponible.","js.gate.methodology":"Suscríbase para desbloquear el catálogo de metodología.","js.gate.pipeline":"Suscríbase para desbloquear los PipelineRecords gobernados.","js.gate.catalog":"Catálogo no disponible.","js.gate.audit":"Suscríbase para desbloquear el libro de accesos.","js.gate.recordUnavail":"Registro no disponible.","js.gate.systemicUnavail":"Panel sistémico no disponible.","js.gate.validationUnavail":"Paquete de validación no disponible.","js.verify.building":"Construyendo…","js.verify.verifying":"Verificando…","js.verify.ok":"✓ Reproducido — output_sha256 coincide, reconstrucción determinista confirmada (registrado en su libro de accesos)","js.verify.fail":"✗ Discrepancia — el registro no se reprodujo","js.verify.failed":"Verificación fallida.","js.sys.computing":"Calculando SRISK / ΔCoVaR…","js.val.building":"Construyendo paquete de validación SR 26-2…","js.trial.starting":"Iniciando su prueba gratuita…","js.trial.unavailable":"Prueba no disponible:","js.trial.couldnot":"No se pudo iniciar la prueba.","js.admin.only":"Solo administradores.","js.admin.enterEmail":"Introduzca un correo electrónico.","js.pf.analyzing":"Analizando…","js.pf.notJson":"JSON no válido.","js.pf.positions":"posiciones","js.pf.gross":"exposición bruta","js.pf.net":"neto (largo − corto)","js.pf.upnl":"PnL no realizado","js.pf.largest":"mayor posición","js.pf.top5":"concentración top-5","js.pf.assetClass":"Clase de activo","js.pf.grossCol":"Bruto","js.pf.netCol":"Neto","js.pf.sanitized":"instantánea saneada","js.net":"neto"}, fr:{"brand.tagline":"Le processus avant la prédiction","land.pill":"Moniteur de risque systémique transfrontalier","land.h1":"Un risque systémique que vous pouvez <span class=\"gold\">reproduire, auditer et défendre.</span>","land.sub":"Un terminal institutionnel de risque systémique — risque multi-actifs en direct, dossiers de crise gouvernés, insuffisance de fonds propres SRISK &amp; ΔCoVaR, et un classeur clés en main de validation de modèle SR 26-2. Chaque valeur est calculée à partir de données publiques, adressée par contenu (SHA-256) et inscrite dans une chaîne d'audit inviolable.","land.trial":"Démarrer l'essai gratuit de 7 jours →","land.signin":"Se connecter","land.trust":"Reproductible · Traçable par audit · Gouverné SR 26-2 · Aucune prévision boîte noire","land.c1.t":"Conditions en direct · 13 indicateurs","land.c1.b":"CISS de la BCE (US/EA/UK), stress financier de la Fed, probabilité de récession selon la courbe des taux, VIX, un véritable indice de contagion transfrontalière Diebold–Yilmaz, écarts de crédit HY, fragilité aux rachats de fonds, transition ESG — chacun avec historique &amp; analyse par indicateur.","land.c2.t":"Cockpit quantitatif · tout symbole","land.c2.b":"Risque multi-actifs mondial sur tout ticker pris en charge par le flux — indices mondiaux, FX, matières premières, méga-capitalisations, crypto. Sharpe / Sortino / vol annualisée &amp; EWMA / bêta / VaR &amp; CVaR / drawdown, plus un graphique en chandeliers avec niveaux projetés &amp; un cône de volatilité.","land.c3.t":"Pipeline de crise · dossiers gouvernés","land.c3.b":"Dossiers reproductibles de fenêtres de crise (GFC · COVID · SVB) — une jauge de stress systémique, contagion en réseau DebtRank, classification de régime, et une comparaison inter-crises — chacun un PipelineRecord adressé par contenu que vous pouvez vérifier.","land.c4.t":"Insuffisance de fonds propres systémique","land.c4.b":"SRISK Σ d'insuffisance de fonds propres en direct + par établissement + ΔCoVaR sur les grandes banques, calculés avec les moteurs NYU V-Lab (Brownlees-Engle) et Adrian-Brunnermeier à partir de bilans, capitalisations boursières et prix publics.","land.c5.t":"Validation de modèle · SR 26-2","land.c5.b":"Un classeur MRM clés en main : inventaire de modèles &amp; hiérarchisation par matérialité, solidité conceptuelle avec citations, registre d'hypothèses classées par matérialité, analyse de sensibilité des paramètres SRISK, convergence Monte-Carlo, et un bloc d'attestation — pour que votre fonction de risque de modèle puisse valider.","land.c6.t":"Gouverné &amp; auditable","land.c6.b":"Chaque lecture est calculée à partir de données publiques et adressée par contenu (SHA-256) ; chaque connexion et accès est inscrit dans un registre chaîné par hachage et inviolable. Reconstruisez tout enregistrement gouverné et vérifiez qu'il se reproduit bit pour bit. La piste d'audit est le produit.","land.tiers":"Desk 48 000 $/an · Fonds / Pro · Institution / Banque centrale — commencez par un essai gratuit de 7 jours, sans carte.","auth.sub":"Accédez au terminal de risque systémique CBSRM.","auth.name":"Nom","auth.email":"E-mail","auth.password":"Mot de passe","ban.title":"Aucun abonnement Desk actif.","ban.sub":"Démarrez un essai gratuit de 7 jours — terminal complet, sans carte. Ou abonnez-vous pour un accès illimité.","ban.trial":"Démarrer l'essai gratuit de 7 jours","ban.subscribe":"S'abonner → 48k $/an","term.title":"Terminal de risque systémique","term.refresh":"Actualiser","term.signout":"Se déconnecter","tab.conditions":"Conditions","tab.riskdesk":"Desk de risque","tab.pipeline":"Pipeline","tab.portfolio":"Portefeuille","tab.methodology":"Méthodologie","tab.developers":"Développeurs","tab.audit":"Registre d'accès","tab.admin":"Admin","cond.source":"Source","ui.close":"Fermer","cond.current":"actuel","cond.clickLens":"Cliquez sur un indicateur pour l'historique &amp; l'analyse.","rd.title":"Cockpit quantitatif","rd.sub":"risque multi-actifs mondial · tout symbole pris en charge par le flux","rd.analyze":"Analyser","rd.h.instrument":"Instrument","rd.h.level":"Niveau","rd.h.vol":"Vol 20j","rd.h.drawdown":"Drawdown","rd.h.state":"État","meth.history":"Voir l'historique &amp; l'analyse en direct →","meth.clickLens":"Cliquez sur un indicateur pour sa méthodologie complète.","meth.h.lens":"Indicateur","meth.h.family":"Famille","meth.h.unit":"Unité","meth.h.source":"Source","dev.h1":"<strong>Risque systémique appelable par agent</strong>","dev.intro":"\n        Les mêmes moteurs qui animent ce terminal sont exposés en tant qu'outils <b>Model Context Protocol (MCP)</b>,\n        afin que votre copilote IA — Claude Desktop, un agent sur mesure, tout client MCP — puisse interroger\n        directement un risque systémique gouverné. <b>Chaque réponse porte un SHA-256 de reproductibilité + provenance</b>,\n        de sorte que la réponse d'un agent est adressée par contenu et traçable par audit — le déficit de confiance qu'une\n        institution réglementée rencontre lorsqu'elle laisse un LLM manipuler des chiffres de risque. Calculé à partir de la\n        méthodologie publique <span style=\"font-family:ui-monospace,Menlo,Consolas,monospace\">cbsrm</span> uniquement.\n      ","dev.install":"Installer &amp; exécuter","dev.config":"Configuration Claude Desktop","dev.tools":"Outils","dev.governed":"Chaque réponse est gouvernée","aud.h.when":"Quand (UTC)","aud.h.event":"Événement","aud.h.route":"Route","aud.h.hash":"Hachage d'entrée","pf.instructions":"Collez un instantané de courtier <b>expurgé</b> (positions uniquement — aucun numéro de compte ni jeton) et analysez le risque du portefeuille. Tout ce qui ressemble à un identifiant est rejeté.","pf.loadSample":"Charger un exemple","pf.analyzeBtn":"Analyser le risque","pl.window":"Fenêtre","pl.build":"Construire l'enregistrement gouverné","pl.verify":"Vérifier la reproductibilité","pl.systemic":"Panneau systémique · SRISK · ΔCoVaR","pl.validation":"Validation de modèle · SR 26-2","adm.verifyLedger":"Vérifier le registre","adm.h.email":"E-mail","adm.h.plan":"Plan","adm.h.status":"Statut","adm.h.admin":"Admin","adm.grant":"Accorder / modifier le droit d'accès","adm.apply":"Appliquer","ph.auth.namePh":"Jane Analyst","ph.auth.emailPh":"vous@institution.org","ph.auth.passwordPh":"Au moins 8 caractères","ph.rd.searchPh":"tout symbole — ^GSPC · EURUSD · GC · BTCUSD · AAPL","ph.adm.emailPh":"utilisateur@institution.org","js.auth.signinTitle":"Se connecter","js.auth.registerTitle":"Créer votre compte","js.auth.signinBtn":"Se connecter","js.auth.registerBtn":"Créer le compte","js.auth.toRegister":"Créer un compte","js.auth.toLogin":"Se connecter","js.auth.newHere":"Nouveau ici ?","js.auth.haveAccount":"Vous avez un compte ?","js.loading":"Chargement…","js.unavailable":"indisponible","js.trialEnded":"Votre essai gratuit est terminé — abonnez-vous pour continuer.","js.trialLeft":"essai · {n}j restants","js.gate.conditions":"Abonnez-vous pour débloquer les conditions en direct.","js.gate.cockpit":"Abonnez-vous pour débloquer le cockpit.","js.gate.cockpitUnavail":"Cockpit indisponible.","js.gate.methodology":"Abonnez-vous pour débloquer le catalogue de méthodologie.","js.gate.pipeline":"Abonnez-vous pour débloquer les PipelineRecords gouvernés.","js.gate.catalog":"Catalogue indisponible.","js.gate.audit":"Abonnez-vous pour débloquer le registre d'accès.","js.gate.recordUnavail":"Enregistrement indisponible.","js.gate.systemicUnavail":"Panneau systémique indisponible.","js.gate.validationUnavail":"Dossier de validation indisponible.","js.verify.building":"Construction…","js.verify.verifying":"Vérification…","js.verify.ok":"✓ Reproduit — output_sha256 concorde, reconstruction déterministe confirmée (inscrit dans votre registre d'accès)","js.verify.fail":"✗ Divergence — l'enregistrement ne s'est pas reproduit","js.verify.failed":"Échec de la vérification.","js.sys.computing":"Calcul de SRISK / ΔCoVaR…","js.val.building":"Construction du dossier de validation SR 26-2…","js.trial.starting":"Démarrage de votre essai gratuit…","js.trial.unavailable":"Essai indisponible :","js.trial.couldnot":"Impossible de démarrer l'essai.","js.admin.only":"Réservé aux administrateurs.","js.admin.enterEmail":"Saisissez un e-mail.","js.pf.analyzing":"Analyse…","js.pf.notJson":"JSON non valide.","js.pf.positions":"positions","js.pf.gross":"exposition brute","js.pf.net":"net (longs − courts)","js.pf.upnl":"PnL latent","js.pf.largest":"position la plus importante","js.pf.top5":"concentration top-5","js.pf.assetClass":"Classe d'actifs","js.pf.grossCol":"Brut","js.pf.netCol":"Net","js.pf.sanitized":"instantané expurgé","js.net":"net"}, de:{"brand.tagline":"Prozess statt Prognose","land.pill":"Grenzüberschreitender Systemrisiko-Monitor","land.h1":"Systemrisiko, das Sie <span class=\"gold\">reproduzieren, prüfen und belegen können.</span>","land.sub":"Ein institutionelles Systemrisiko-Terminal — Live-Risiko über alle Anlageklassen, governance-gestützte Krisendossiers, SRISK &amp; ΔCoVaR-Kapitallücke sowie ein schlüsselfertiger SR 26-2-Modellvalidierungsordner. Jede Kennzahl wird aus öffentlichen Daten berechnet, inhaltsadressiert (SHA-256) und in eine manipulationssichere Prüfkette geschrieben.","land.trial":"7-tägige kostenlose Testphase starten →","land.signin":"Anmelden","land.trust":"Reproduzierbar · Audit-nachverfolgbar · SR 26-2-governancekonform · Keine Black-Box-Prognosen","land.c1.t":"Live-Bedingungen · 13 Perspektiven","land.c1.b":"ECB CISS (US/EA/UK), Fed-Finanzstress, Rezessionswahrscheinlichkeit der Zinskurve, VIX, ein echter Diebold–Yilmaz-Index grenzüberschreitender Ansteckung, HY-Kreditspreads, Fragilität bei Fondsrücknahmen, ESG-Transition — jeweils mit Historie &amp; Analytik je Perspektive.","land.c2.t":"Quant-Cockpit · jedes Symbol","land.c2.b":"Globales Risiko über alle Anlageklassen für jeden vom Feed unterstützten Ticker — Weltindizes, FX, Rohstoffe, Mega-Caps, Krypto. Sharpe / Sortino / annualisierte &amp; EWMA-Vol / Beta / VaR &amp; CVaR / Drawdown, plus Kerzenchart mit projizierten Niveaus &amp; Volatilitätskegel.","land.c3.t":"Krisen-Pipeline · governance-gestützte Dossiers","land.c3.b":"Reproduzierbare Krisenfenster-Dossiers (GFC · COVID · SVB) — ein Systemstress-Indikator, DebtRank-Netzwerkansteckung, Regimeklassifizierung und ein krisenübergreifender Vergleich — jeweils ein inhaltsadressierter PipelineRecord, den Sie verifizieren können.","land.c4.t":"Systemische Kapitallücke","land.c4.b":"Live-SRISK-Σ-Kapitallücke + je Institut + ΔCoVaR über die großen Banken, berechnet mit den Engines des NYU V-Lab (Brownlees-Engle) und Adrian-Brunnermeier aus öffentlichen Bilanzen, Marktkapitalisierung und Kursen.","land.c5.t":"Modellvalidierung · SR 26-2","land.c5.b":"Ein schlüsselfertiger MRM-Ordner: Modellinventar &amp; Wesentlichkeitseinstufung, konzeptionelle Fundiertheit mit Quellenangaben, ein wesentlichkeitsbewertetes Annahmenregister, ein SRISK-Parametersensitivitätslauf, Monte-Carlo-Konvergenz und ein Attestierungsblock — damit Ihre Modellrisikofunktion abzeichnen kann.","land.c6.t":"Governance-gesteuert &amp; prüfbar","land.c6.b":"Jeder Messwert wird aus öffentlichen Daten berechnet und inhaltsadressiert (SHA-256); jede Anmeldung und jeder Zugriff wird in ein manipulationssicheres, hash-verkettetes Register geschrieben. Erstellen Sie jeden governance-gestützten Datensatz neu und prüfen Sie, dass er sich bitgenau reproduziert. Der Audit-Trail ist das Produkt.","land.tiers":"Desk $48,000/yr · Fund / Pro · Institution / Zentralbank — beginnen Sie mit einer kostenlosen 7-tägigen Testphase, ohne Kreditkarte.","auth.sub":"Zugang zum CBSRM-Systemrisiko-Terminal.","auth.name":"Name","auth.email":"E-Mail","auth.password":"Passwort","ban.title":"Kein aktives Desk-Abonnement.","ban.sub":"Starten Sie eine kostenlose 7-tägige Testphase — volles Terminal, ohne Kreditkarte. Oder abonnieren Sie für unbegrenzten Zugang.","ban.trial":"7-tägige kostenlose Testphase starten","ban.subscribe":"Abonnieren → $48k/yr","term.title":"Systemrisiko-Terminal","term.refresh":"Aktualisieren","term.signout":"Abmelden","tab.conditions":"Bedingungen","tab.riskdesk":"Risk Desk","tab.pipeline":"Pipeline","tab.portfolio":"Portfolio","tab.methodology":"Methodik","tab.developers":"Entwickler","tab.audit":"Zugriffsregister","tab.admin":"Admin","cond.source":"Quelle","ui.close":"Schließen","cond.current":"aktuell","cond.clickLens":"Klicken Sie eine Perspektive für Historie &amp; Analytik an.","rd.title":"Quant-Cockpit","rd.sub":"globales Risiko über alle Anlageklassen · jedes vom Feed unterstützte Symbol","rd.analyze":"Analysieren","rd.h.instrument":"Instrument","rd.h.level":"Niveau","rd.h.vol":"Vol 20d","rd.h.drawdown":"Drawdown","rd.h.state":"Zustand","meth.history":"Live-Historie &amp; Analytik ansehen →","meth.clickLens":"Klicken Sie eine Perspektive für ihre vollständige Methodik an.","meth.h.lens":"Perspektive","meth.h.family":"Familie","meth.h.unit":"Einheit","meth.h.source":"Quelle","dev.h1":"<strong>Agentenaufrufbares Systemrisiko</strong>","dev.intro":"\n        Dieselben Engines hinter diesem Terminal werden als <b>Model Context Protocol (MCP)</b>-\n        Werkzeuge bereitgestellt, sodass Ihr KI-Copilot — Claude Desktop, ein eigener Agent, jeder MCP-Client — governance-gestütztes\n        Systemrisiko direkt abfragen kann. <b>Jede Antwort trägt eine Reproduzierbarkeits-SHA-256 + Provenienz</b>,\n        sodass die Antwort eines Agenten inhaltsadressiert und audit-nachverfolgbar ist — die Vertrauenslücke, die eine regulierte\n        Institution hat, wenn sie ein LLM auf Risikozahlen zugreifen lässt. Berechnet ausschließlich aus der öffentlichen\n        <span style=\"font-family:ui-monospace,Menlo,Consolas,monospace\">cbsrm</span>-Methodik.\n      ","dev.install":"Installieren &amp; ausführen","dev.config":"Claude Desktop-Konfiguration","dev.tools":"Werkzeuge","dev.governed":"Jede Antwort ist governance-gestützt","aud.h.when":"Wann (UTC)","aud.h.event":"Ereignis","aud.h.route":"Route","aud.h.hash":"Eintragshash","pf.instructions":"Fügen Sie einen <b>bereinigten</b> Broker-Snapshot ein (nur Positionen — keine Kontonummern oder Token) und analysieren Sie das Portfoliorisiko. Alles, was wie Zugangsdaten aussieht, wird zurückgewiesen.","pf.loadSample":"Beispiel laden","pf.analyzeBtn":"Risiko analysieren","pl.window":"Fenster","pl.build":"Governance-Datensatz erstellen","pl.verify":"Reproduzierbarkeit prüfen","pl.systemic":"Systemisches Panel · SRISK · ΔCoVaR","pl.validation":"Modellvalidierung · SR 26-2","adm.verifyLedger":"Register prüfen","adm.h.email":"E-Mail","adm.h.plan":"Plan","adm.h.status":"Status","adm.h.admin":"Admin","adm.grant":"Berechtigung erteilen / ändern","adm.apply":"Anwenden","ph.auth.namePh":"Jane Analyst","ph.auth.emailPh":"you@institution.org","ph.auth.passwordPh":"Mindestens 8 Zeichen","ph.rd.searchPh":"beliebiges Symbol — ^GSPC · EURUSD · GC · BTCUSD · AAPL","ph.adm.emailPh":"user@institution.org","js.auth.signinTitle":"Anmelden","js.auth.registerTitle":"Konto erstellen","js.auth.signinBtn":"Anmelden","js.auth.registerBtn":"Konto erstellen","js.auth.toRegister":"Konto erstellen","js.auth.toLogin":"Anmelden","js.auth.newHere":"Neu hier?","js.auth.haveAccount":"Bereits ein Konto?","js.loading":"Wird geladen…","js.unavailable":"nicht verfügbar","js.trialEnded":"Ihre kostenlose Testphase ist beendet — abonnieren Sie, um fortzufahren.","js.trialLeft":"Testphase · noch {n} Tage","js.gate.conditions":"Abonnieren Sie, um Live-Bedingungen freizuschalten.","js.gate.cockpit":"Abonnieren Sie, um das Cockpit freizuschalten.","js.gate.cockpitUnavail":"Cockpit nicht verfügbar.","js.gate.methodology":"Abonnieren Sie, um den Methodikkatalog freizuschalten.","js.gate.pipeline":"Abonnieren Sie, um governance-gestützte PipelineRecords freizuschalten.","js.gate.catalog":"Katalog nicht verfügbar.","js.gate.audit":"Abonnieren Sie, um das Zugriffsregister freizuschalten.","js.gate.recordUnavail":"Datensatz nicht verfügbar.","js.gate.systemicUnavail":"Systemisches Panel nicht verfügbar.","js.gate.validationUnavail":"Validierungspaket nicht verfügbar.","js.verify.building":"Wird erstellt…","js.verify.verifying":"Wird geprüft…","js.verify.ok":"✓ Reproduziert — output_sha256 stimmt überein, deterministische Neuerstellung bestätigt (in Ihrem Zugriffsregister protokolliert)","js.verify.fail":"✗ Abweichung — Datensatz reproduzierte sich nicht","js.verify.failed":"Prüfung fehlgeschlagen.","js.sys.computing":"SRISK / ΔCoVaR wird berechnet…","js.val.building":"SR 26-2-Validierungspaket wird erstellt…","js.trial.starting":"Ihre kostenlose Testphase wird gestartet…","js.trial.unavailable":"Testphase nicht verfügbar:","js.trial.couldnot":"Die Testphase konnte nicht gestartet werden.","js.admin.only":"Nur für Admins.","js.admin.enterEmail":"Geben Sie eine E-Mail ein.","js.pf.analyzing":"Wird analysiert…","js.pf.notJson":"Kein gültiges JSON.","js.pf.positions":"Positionen","js.pf.gross":"Bruttoexposure","js.pf.net":"netto (long − short)","js.pf.upnl":"unrealisierter PnL","js.pf.largest":"größte Position","js.pf.top5":"Top-5-Konzentration","js.pf.assetClass":"Anlageklasse","js.pf.grossCol":"Brutto","js.pf.netCol":"Netto","js.pf.sanitized":"bereinigter Snapshot","js.net":"netto"} };
+Object.assign(I18N.en, {
+  "js.auth.signinTitle":"Sign in",
+  "js.auth.registerTitle":"Create your account",
+  "js.auth.signinBtn":"Sign in",
+  "js.auth.registerBtn":"Create account",
+  "js.auth.toRegister":"Create an account",
+  "js.auth.toLogin":"Sign in",
+  "js.auth.newHere":"New here?",
+  "js.auth.haveAccount":"Have an account?",
+  "js.loading":"Loading…",
+  "js.unavailable":"unavailable",
+  "js.trialEnded":"Your free trial has ended — subscribe to continue.",
+  "js.trialLeft":"trial · {n}d left",
+  "js.gate.conditions":"Subscribe to unlock live conditions.",
+  "js.gate.cockpit":"Subscribe to unlock the cockpit.",
+  "js.gate.cockpitUnavail":"Cockpit unavailable.",
+  "js.gate.methodology":"Subscribe to unlock the methodology catalog.",
+  "js.gate.pipeline":"Subscribe to unlock governed PipelineRecords.",
+  "js.gate.catalog":"Catalog unavailable.",
+  "js.gate.audit":"Subscribe to unlock the access ledger.",
+  "js.gate.recordUnavail":"Record unavailable.",
+  "js.gate.systemicUnavail":"Systemic panel unavailable.",
+  "js.gate.validationUnavail":"Validation package unavailable.",
+  "js.verify.building":"Building…",
+  "js.verify.verifying":"Verifying…",
+  "js.verify.ok":"✓ Reproduced — output_sha256 matches, deterministic rebuild confirmed (logged to your access ledger)",
+  "js.verify.fail":"✗ Mismatch — record did not reproduce",
+  "js.verify.failed":"Verify failed.",
+  "js.sys.computing":"Computing SRISK / ΔCoVaR…",
+  "js.val.building":"Building SR 26-2 validation package…",
+  "js.trial.starting":"Starting your free trial…",
+  "js.trial.unavailable":"Trial unavailable:",
+  "js.trial.couldnot":"Could not start the trial.",
+  "js.admin.only":"Admin only.",
+  "js.admin.enterEmail":"Enter an email.",
+  "js.pf.analyzing":"Analyzing…",
+  "js.pf.notJson":"Not valid JSON.",
+  "js.pf.positions":"positions",
+  "js.pf.gross":"gross exposure",
+  "js.pf.net":"net (long − short)",
+  "js.pf.upnl":"unrealized PnL",
+  "js.pf.largest":"largest position",
+  "js.pf.top5":"top-5 concentration",
+  "js.pf.assetClass":"Asset class",
+  "js.pf.grossCol":"Gross",
+  "js.pf.netCol":"Net",
+  "js.pf.sanitized":"sanitized snapshot",
+  "js.net":"net",
+});
+let CUR = "en";
+const LANG_KEY = "cbsrm_lang";
+function t(k){ const d=I18N[CUR]; if(d && d[k]!=null) return d[k]; return I18N.en[k]!=null ? I18N.en[k] : k; }
+function tf(k, vars){ let s=t(k); for(const x in vars) s = s.split("{"+x+"}").join(vars[x]); return s; }
+// capture the canonical EN copy of every [data-i18n] node (runs once at parse time)
+(function(){
+  document.querySelectorAll("[data-i18n]").forEach(el => { I18N.en[el.getAttribute("data-i18n")] = el.innerHTML; });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { I18N.en["ph."+el.getAttribute("data-i18n-ph")] = el.getAttribute("placeholder")||""; });
+})();
+function applyStatic(){
+  document.querySelectorAll("[data-i18n]").forEach(el => { const v=t(el.getAttribute("data-i18n")); if(v!=null) el.innerHTML=v; });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => { const v=t("ph."+el.getAttribute("data-i18n-ph")); if(v!=null) el.setAttribute("placeholder", v); });
+  document.documentElement.lang = CUR;
+}
+function applyLang(l){
+  if(!I18N[l]) l="en";
+  CUR=l; try{ localStorage.setItem(LANG_KEY, l); }catch(e){}
+  applyStatic();
+  const sel=document.getElementById("lang-sel"); if(sel) sel.value=l;
+  setMode(mode);                              // re-localise auth chrome
+  if(_lastUser && !document.getElementById("terminal").classList.contains("hidden")){
+    renderPlan(_lastUser);                    // re-localise plan/trial chrome
+    activate(currentTab());                   // re-render the active pane through t()
+  }
+}
 
 async function api(path, {method="GET", body, auth=true} = {}){
   const headers = {"Content-Type":"application/json"};
@@ -393,12 +509,12 @@ async function tryRefresh(){
 $("toRegister").onclick = () => setMode(mode==="login"?"register":"login");
 function setMode(m){
   mode = m;
-  $("authTitle").textContent = m==="login" ? "Sign in" : "Create your account";
-  $("authBtn").textContent  = m==="login" ? "Sign in" : "Create account";
+  $("authTitle").textContent = m==="login" ? t("js.auth.signinTitle") : t("js.auth.registerTitle");
+  $("authBtn").textContent  = m==="login" ? t("js.auth.signinBtn") : t("js.auth.registerBtn");
   $("nameWrap").classList.toggle("hidden", m!=="register");
   $("authSwitch").innerHTML = m==="login"
-    ? 'New here? <a id="toRegister">Create an account</a>'
-    : 'Have an account? <a id="toRegister">Sign in</a>';
+    ? t("js.auth.newHere")+' <a id="toRegister">'+t("js.auth.toRegister")+"</a>"
+    : t("js.auth.haveAccount")+' <a id="toRegister">'+t("js.auth.toLogin")+"</a>";
   $("toRegister").onclick = () => setMode(mode==="login"?"register":"login");
   $("authErr").textContent = "";
 }
@@ -433,18 +549,22 @@ async function _setSubLink(userId){
   try { const r = await api("/stripe/config", {auth:false}); if(r.ok){ const c = await r.json(); if(c.payment_link_desk) base = c.payment_link_desk; } } catch(e){}
   $("subLink").href = base + (base.includes("?")?"&":"?") + "client_reference_id=" + encodeURIComponent(userId);
 }
-function enterTerminal(user){
-  show("terminal");
-  $("who").textContent = user.email;
+function renderPlan(user){
   const trialing = user.status === "trialing";
   $("planPill").textContent = (trialing && user.trial_days_left!=null)
-    ? `trial · ${user.trial_days_left}d left` : (user.plan + " · " + user.status);
+    ? tf("js.trialLeft",{n:user.trial_days_left}) : (user.plan + " · " + user.status);
   $("planPill").className = "pill " + (user.has_terminal?"ok":"no");
   const entitled = !!user.has_terminal;
   $("subBanner").classList.toggle("hidden", entitled);
   // Trial CTA: offer only to never-subscribed accounts; note when a trial has lapsed.
   $("trialBtn").classList.toggle("hidden", user.status !== "inactive");
-  $("trialMsg").textContent = (trialing && !entitled) ? "Your free trial has ended — subscribe to continue." : "";
+  $("trialMsg").textContent = (trialing && !entitled) ? t("js.trialEnded") : "";
+}
+function enterTerminal(user){
+  _lastUser = user;
+  show("terminal");
+  $("who").textContent = user.email;
+  renderPlan(user);
   _setSubLink(user.id);
   $("adminPill").classList.toggle("hidden", !user.is_admin);
   $("adminTab").classList.toggle("hidden", !user.is_admin);
@@ -494,9 +614,9 @@ function fmtVal(rd){
 }
 async function loadConditions(){
   $("lensPanel").classList.add("hidden");
-  $("condGrid").innerHTML=""; $("condMeta").textContent="Loading…";
+  $("condGrid").innerHTML=""; $("condMeta").textContent=t("js.loading");
   const res = await api("/v1/desk/conditions?source="+$("condSource").value);
-  if(res.status===403){ $("condMeta").textContent=""; $("condGrid").innerHTML='<div class="small muted" style="padding:6px 2px">Subscribe to unlock live conditions.</div>'; return gateLost(); }
+  if(res.status===403){ $("condMeta").textContent=""; $("condGrid").innerHTML='<div class="small muted" style="padding:6px 2px">'+t("js.gate.conditions")+'</div>'; return gateLost(); }
   const j = await res.json();
   $("condMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
   $("condGrid").innerHTML = j.readings.map(rd => rd.status==="ok"
@@ -558,10 +678,10 @@ function lineChartSVG(series, bands, fmt){
 }
 async function openLens(id){
   const p=$("lensPanel"); p.classList.remove("hidden");
-  $("lpTitle").textContent="Loading…"; $("lpChart").innerHTML=""; $("lpStats").innerHTML=""; $("lpCurrent").textContent="—"; $("lpFoot").textContent="";
+  $("lpTitle").textContent=t("js.loading"); $("lpChart").innerHTML=""; $("lpStats").innerHTML=""; $("lpCurrent").textContent="—"; $("lpFoot").textContent="";
   const res = await api("/v1/desk/lens/"+encodeURIComponent(id)+"?source="+$("condSource").value);
   if(res.status===403) return gateLost();
-  if(!res.ok){ $("lpTitle").textContent="Unavailable"; return; }
+  if(!res.ok){ $("lpTitle").textContent=t("js.unavailable"); return; }
   const j = await res.json(); const s = j.stats;
   $("lpTitle").textContent = j.label + (j.unit?(" · "+j.unit):"");
   if(s){
@@ -581,7 +701,7 @@ let methById = {};
 async function loadMethodology(){
   $("methPanel").classList.add("hidden");
   const res = await api("/v1/desk/methodology");
-  if(res.status===403){ $("methNote").textContent="Subscribe to unlock the methodology catalog."; $("methTable").querySelector("tbody").innerHTML=""; return gateLost(); }
+  if(res.status===403){ $("methNote").textContent=t("js.gate.methodology"); $("methTable").querySelector("tbody").innerHTML=""; return gateLost(); }
   const j = await res.json(); $("methNote").textContent = j.note;
   methById = {}; j.lenses.forEach(l => methById[l.id] = l);
   $("methTable").querySelector("tbody").innerHTML = j.lenses.map(l =>
@@ -616,8 +736,8 @@ async function loadRiskdesk(){
   $("rdPanel").classList.add("hidden");
   const grp = $("rdGroup").value || "us-benchmarks";
   const res = await api("/v1/desk/riskdesk?group="+encodeURIComponent(grp)+"&source="+$("rdSource").value);
-  if(res.status===403){ $("rdMeta").textContent="Subscribe to unlock the cockpit."; $("rdTable").querySelector("tbody").innerHTML=""; $("rdPosture").innerHTML=""; return gateLost(); }
-  if(!res.ok){ $("rdMeta").textContent="Cockpit unavailable."; return; }
+  if(res.status===403){ $("rdMeta").textContent=t("js.gate.cockpit"); $("rdTable").querySelector("tbody").innerHTML=""; $("rdPosture").innerHTML=""; return gateLost(); }
+  if(!res.ok){ $("rdMeta").textContent=t("js.gate.cockpitUnavail"); return; }
   const j = await res.json();
   $("rdMeta").textContent = j.group_label+" · "+j.summary.live+"/"+j.summary.total+" live"+(j.as_of?" · "+j.as_of:"")+" · sha "+(j.output_sha256||"").slice(0,10)+"…";
   const p = j.posture||{};
@@ -731,8 +851,8 @@ $("rdSearch").onkeydown = (e) => { if(e.key==="Enter") openSymbol($("rdSearch").
 async function loadPipeline(){
   $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plMsg").textContent="";
   const res = await api("/v1/desk/pipeline/catalog");
-  if(res.status===403){ $("plNote").textContent="Subscribe to unlock governed PipelineRecords."; $("plWindow").innerHTML=""; return gateLost(); }
-  if(!res.ok){ $("plMsg").textContent="Catalog unavailable."; return; }
+  if(res.status===403){ $("plNote").textContent=t("js.gate.pipeline"); $("plWindow").innerHTML=""; return gateLost(); }
+  if(!res.ok){ $("plMsg").textContent=t("js.gate.catalog"); return; }
   const j = await res.json();
   $("plWindow").innerHTML = (j.windows||[]).map(w =>
     `<option value="${escHtml(w.window_id)}">${escHtml(w.window_id)} — ${escHtml(w.label)}</option>`).join("");
@@ -824,10 +944,10 @@ function plSriskBars(per, totalBn){
 }
 async function buildPipeline(){
   const w = $("plWindow").value; if(!w) return;
-  $("plMsg").textContent="Building…"; $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plSysResult").innerHTML="";
+  $("plMsg").textContent=t("js.verify.building"); $("plResult").innerHTML=""; $("plResult").dataset.sha=""; $("plSysResult").innerHTML="";
   const res = await api("/v1/desk/pipeline/"+encodeURIComponent(w));
   if(res.status===403) return gateLost();
-  if(!res.ok){ $("plMsg").textContent="Record unavailable."; return; }
+  if(!res.ok){ $("plMsg").textContent=t("js.gate.recordUnavail"); return; }
   const j = await res.json(); $("plMsg").textContent="";
   const m=j.manifest||{}, h=m.hashes||{}, d=j.dossier||{}, sc=d.stress_channels||{}, dr=d.debt_rank||{};
   $("plResult").dataset.sha = h.output_sha256||"";
@@ -856,10 +976,10 @@ async function buildPipeline(){
      </div>`;
 }
 async function loadSystemic(){
-  $("plMsg").textContent="Computing SRISK / ΔCoVaR…"; $("plSysResult").innerHTML="";
+  $("plMsg").textContent=t("js.sys.computing"); $("plSysResult").innerHTML="";
   const res = await api("/v1/desk/pipeline/systemic");
   if(res.status===403) return gateLost();
-  if(!res.ok){ $("plMsg").textContent="Systemic panel unavailable."; return; }
+  if(!res.ok){ $("plMsg").textContent=t("js.gate.systemicUnavail"); return; }
   const j = await res.json(); $("plMsg").textContent="";
   if(!j.available){ $("plSysResult").innerHTML='<div class="small muted">Bank fundamentals unavailable.</div>'; return; }
   const sk=j.srisk||{}, per=sk.per_firm||[], B="var(--bad,#f85149)";
@@ -879,10 +999,10 @@ async function loadSystemic(){
      </div>`;
 }
 async function loadValidation(){
-  $("plMsg").textContent="Building SR 26-2 validation package…"; $("plValResult").innerHTML="";
+  $("plMsg").textContent=t("js.val.building"); $("plValResult").innerHTML="";
   const res = await api("/v1/desk/pipeline/validation");
   if(res.status===403) return gateLost();
-  if(!res.ok){ $("plMsg").textContent="Validation package unavailable."; return; }
+  if(!res.ok){ $("plMsg").textContent=t("js.gate.validationUnavail"); return; }
   const j = await res.json(); $("plMsg").textContent="";
   const G="#3fb950",B="#f85149",A="#d29922",Bl="#58a6ff";
   const sc=s=> /computed|active/.test(s)?G : /pending|operator/.test(s)?A : Bl;
@@ -925,17 +1045,17 @@ async function loadValidation(){
 }
 async function verifyPipeline(){
   const w = $("plWindow").value; if(!w) return;
-  $("plMsg").textContent="Verifying…";
+  $("plMsg").textContent=t("js.verify.verifying");
   const expected = $("plResult").dataset.sha;
   const body = expected ? {window_id:w, expected_output_sha256:expected} : {window_id:w};
   const res = await api("/v1/desk/pipeline/verify",{method:"POST", body});
   if(res.status===403) return gateLost();
-  if(!res.ok){ $("plMsg").textContent="Verify failed."; return; }
+  if(!res.ok){ $("plMsg").textContent=t("js.verify.failed"); return; }
   const j = await res.json();
   const ok = j.reproduced && j.deterministic;
   $("plMsg").innerHTML = ok
-    ? '<span style="color:var(--good,#3fb950)">✓ Reproduced — output_sha256 matches, deterministic rebuild confirmed (logged to your access ledger)</span>'
-    : '<span style="color:var(--bad,#f85149)">✗ Mismatch — record did not reproduce</span>';
+    ? '<span style="color:var(--good)">'+t("js.verify.ok")+'</span>'
+    : '<span style="color:var(--bad)">'+t("js.verify.fail")+'</span>';
 }
 $("plBuild").onclick = buildPipeline;
 $("plVerify").onclick = verifyPipeline;
@@ -943,7 +1063,7 @@ $("plSystemic").onclick = loadSystemic;
 $("plValidation").onclick = loadValidation;
 async function loadAudit(){
   const res = await api("/v1/desk/audit/export");
-  if(res.status===403){ $("auditMeta").textContent="Subscribe to unlock the access ledger."; $("chainPill").textContent=""; $("chainPill").className="pill"; $("auditTable").querySelector("tbody").innerHTML=""; return gateLost(); }
+  if(res.status===403){ $("auditMeta").textContent=t("js.gate.audit"); $("chainPill").textContent=""; $("chainPill").className="pill"; $("auditTable").querySelector("tbody").innerHTML=""; return gateLost(); }
   const j = await res.json();
   $("auditMeta").textContent = j.count+" events for "+j.subject;
   $("chainPill").textContent = j.chain_ok ? "chain verified ✓" : "chain BROKEN";
@@ -955,19 +1075,19 @@ async function loadAudit(){
 function gateLost(){ $("subBanner").classList.remove("hidden"); }
 $("trialBtn").onclick = async () => {
   $("trialMsg").style.color = "var(--muted)";
-  $("trialMsg").textContent = "Starting your free trial…";
+  $("trialMsg").textContent = t("js.trial.starting");
   const res = await api("/auth/start-trial", {method:"POST"});
   const j = await res.json().catch(()=>({}));
   if(res.ok){ enterTerminal(j); }
   else { $("trialMsg").style.color = "var(--amber)";
          $("trialMsg").textContent = (j.detail && j.detail.reason)
-           ? ("Trial unavailable: " + String(j.detail.reason).replace(/_/g, " ")) : "Could not start the trial."; }
+           ? (t("js.trial.unavailable")+" " + String(j.detail.reason).replace(/_/g, " ")) : t("js.trial.couldnot"); }
 };
 
 // ---- admin ----
 async function loadAdmin(){
   const res = await api("/v1/admin/users");
-  if(res.status===403){ $("adminMeta").textContent="Admin only."; return; }
+  if(res.status===403){ $("adminMeta").textContent=t("js.admin.only"); return; }
   const j = await res.json();
   $("adminMeta").textContent = j.count+" accounts";
   $("adminUsers").querySelector("tbody").innerHTML = j.users.map(u =>
@@ -979,7 +1099,7 @@ async function loadAdmin(){
 $("grantBtn").onclick = async () => {
   const email=$("grantEmail").value.trim(), plan=$("grantPlan").value, status=$("grantStatus").value;
   $("adminMsg").textContent="";
-  if(!email){ $("adminMsg").style.color="var(--amber)"; $("adminMsg").textContent="Enter an email."; return; }
+  if(!email){ $("adminMsg").style.color="var(--amber)"; $("adminMsg").textContent=t("js.admin.enterEmail"); return; }
   const res = await api("/v1/admin/entitlement",{method:"POST",body:{email,plan,status}});
   const j = await res.json().catch(()=>({}));
   if(res.ok){ $("adminMsg").style.color="var(--green)"; $("adminMsg").textContent="Updated "+j.user.email+" → "+j.user.plan+" / "+j.user.status; loadAdmin(); }
@@ -997,25 +1117,25 @@ function renderPortfolio(j){
   const card=(label,val,color)=>`<div class="lens"><div class="k">${label}</div><div class="v" style="font-size:20px${color?(';color:'+color):''}">${val}</div></div>`;
   const net = j.total_long_exposure_usd - j.total_short_exposure_usd;
   const cards=[
-    card("positions", j.n_positions),
-    card("gross exposure", pfUsd(j.total_gross_exposure_usd)),
-    card("net (long − short)", pfUsd(net)),
-    card("unrealized PnL", pfUsd(j.total_unrealized_pnl_usd), j.total_unrealized_pnl_usd>=0?"var(--green)":"var(--red)"),
-    card("largest position", Math.round(j.largest_position_pct_of_gross*100)+"%"),
-    card("top-5 concentration", Math.round(j.concentration_top5_pct_of_gross*100)+"%"),
+    card(t("js.pf.positions"), j.n_positions),
+    card(t("js.pf.gross"), pfUsd(j.total_gross_exposure_usd)),
+    card(t("js.pf.net"), pfUsd(net)),
+    card(t("js.pf.upnl"), pfUsd(j.total_unrealized_pnl_usd), j.total_unrealized_pnl_usd>=0?"var(--green)":"var(--red)"),
+    card(t("js.pf.largest"), Math.round(j.largest_position_pct_of_gross*100)+"%"),
+    card(t("js.pf.top5"), Math.round(j.concentration_top5_pct_of_gross*100)+"%"),
   ].join("");
   const rows=(j.by_asset_class||[]).map(a=>`<tr><td>${a.asset_class}</td><td>${pfUsd(a.gross_exposure_usd)}</td><td>${pfUsd(a.net_exposure_usd)}</td><td>${a.n_positions}</td></tr>`).join("");
   $("pfResult").innerHTML = `<div class="grid">${cards}</div>
-    <table style="margin-top:14px"><thead><tr><th>Asset class</th><th>Gross</th><th>Net</th><th>#</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="small muted" style="margin-top:8px">${j.account_alias} · ${j.n_positions} positions · sanitized snapshot</div>`;
+    <table style="margin-top:14px"><thead><tr><th>${t("js.pf.assetClass")}</th><th>${t("js.pf.grossCol")}</th><th>${t("js.pf.netCol")}</th><th>#</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="small muted" style="margin-top:8px">${j.account_alias} · ${j.n_positions} ${t("js.pf.positions")} · ${t("js.pf.sanitized")}</div>`;
 }
 $("pfSample").onclick = async () => {
   const res = await api("/v1/desk/portfolio/sample"); if(res.status===403) return gateLost();
   if(res.ok){ $("pfInput").value = JSON.stringify(await res.json(), null, 2); $("pfMsg").textContent=""; $("pfResult").innerHTML=""; }
 };
 $("pfRun").onclick = async () => {
-  $("pfResult").innerHTML=""; $("pfMsg").style.color="var(--muted)"; $("pfMsg").textContent="Analyzing…";
-  let body; try{ body=JSON.parse($("pfInput").value); }catch(e){ $("pfMsg").style.color="var(--amber)"; $("pfMsg").textContent="Not valid JSON."; return; }
+  $("pfResult").innerHTML=""; $("pfMsg").style.color="var(--muted)"; $("pfMsg").textContent=t("js.pf.analyzing");
+  let body; try{ body=JSON.parse($("pfInput").value); }catch(e){ $("pfMsg").style.color="var(--amber)"; $("pfMsg").textContent=t("js.pf.notJson"); return; }
   const res = await api("/v1/desk/portfolio",{method:"POST",body});
   if(res.status===403) return gateLost();
   const j = await res.json().catch(()=>({}));
@@ -1023,8 +1143,21 @@ $("pfRun").onclick = async () => {
   $("pfMsg").textContent=""; renderPortfolio(j);
 };
 
+// ---- language boot: ?lang= → localStorage → browser → en ----
+(function(){
+  let l=null;
+  try{ l=new URLSearchParams(location.search).get("lang"); }catch(e){}
+  if(!l || !I18N[l]){ try{ l=localStorage.getItem(LANG_KEY); }catch(e){} }
+  if(!l || !I18N[l]){ l=(navigator.language||"en").slice(0,2).toLowerCase(); }
+  if(!I18N[l]) l="en";
+  CUR=l;
+  const sel=document.getElementById("lang-sel");
+  if(sel){ sel.value=l; sel.addEventListener("change", () => applyLang(sel.value)); }
+})();
+
 // ---- boot ----
 (async function boot(){
+  applyStatic();                       // localise the static chrome for the detected language
   if(store.a){
     const res = await api("/auth/me");
     if(res.ok){ enterTerminal(await res.json()); return; }
