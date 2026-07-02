@@ -24,8 +24,10 @@
 #     STRIPE_PRICE_RESEARCHER price_...     (Stripe Price id for the $49 tier)
 #     STRIPE_PRICE_PRO        price_...     (Stripe Price id for the $499 tier)
 #     STRIPE_PRICE_DESK       price_...     (Stripe Price id for the $48k/yr Desk)
-#     FRED_API_KEY            (optional — enables live /v1/desk/conditions FRED lenses)
-#     FINANCIALDATA_API_KEY   (the commercial market feed — powers VIX + the advanced lenses)
+#
+# The two data-feed keys (FRED_API_KEY, FINANCIALDATA_API_KEY) now live in the
+# shared `wavervanir-data-keys` env group (see envVarGroups below) — pasted once
+# in the Render UI and linked to BOTH the web service and the cron.
 #
 # SECURITY: never put sk_*, whsec_*, or any real secret in this committed file.
 # Only env-var NAMES live here; values are entered in the Render UI.
@@ -41,6 +43,17 @@ databases:
     # keys + waitlist rows go with it). Upgrade to the $7 `starter` plan in the
     # Render UI before expiry. See DEPLOY_QUICKSTART.md Step 1.
     plan: free
+
+# Shared data-provider keys — one source of truth, linked to BOTH the web
+# service and the cron (created + linked live 2026-07-02). Values are pasted
+# once into the group in the Render UI (sync:false → never in git).
+envVarGroups:
+  - name: wavervanir-data-keys
+    envVars:
+      - key: FRED_API_KEY
+        sync: false
+      - key: FINANCIALDATA_API_KEY
+        sync: false
 
 services:
   - type: web
@@ -88,10 +101,9 @@ services:
         sync: false
       - key: STRIPE_PAYMENT_LINK_DESK
         sync: false
-      - key: FRED_API_KEY
-        sync: false
-      - key: FINANCIALDATA_API_KEY
-        sync: false
+    # FRED_API_KEY + FINANCIALDATA_API_KEY come from the shared group above.
+    envVarGroups:
+      - wavervanir-data-keys
 
   # --------------------------------------------------------------------------
   # Cache-warm cron — recomputes the live 13-lens conditions snapshot every
@@ -112,7 +124,6 @@ services:
         fromDatabase:
           name: wavervanir-pg
           property: connectionString
-      - key: FRED_API_KEY
-        sync: false
-      - key: FINANCIALDATA_API_KEY
-        sync: false
+    # FRED_API_KEY + FINANCIALDATA_API_KEY come from the shared group above.
+    envVarGroups:
+      - wavervanir-data-keys
