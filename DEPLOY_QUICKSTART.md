@@ -42,9 +42,13 @@ This repo ships `render.yaml` at the root, so Render provisions the web service
    (`cbsrm-golive` or `main`).
 3. Render reads `render.yaml` and shows: web service `wavervanir-api` +
    database `wavervanir-pg`. Click **Apply**.
-   - ⚠️ The blueprint sets the Postgres `plan: free`, which Render **deletes
-     after 90 days** (taking minted API keys + waitlist rows with it). Before
-     then, upgrade `wavervanir-pg` to the **$7 Starter** plan in the Render UI.
+   - ⚠️ The blueprint sets the Postgres `plan: starter` ($7/mo) deliberately.
+     Do not move it to `free`: a free instance is time-limited, and when it
+     expires Render suspends and then deletes it — taking minted API keys and
+     waitlist rows with it. A suspended database refuses every connection, so
+     Desk sign-in and every other authenticated route return
+     "internal server error" until it is restored. This has already happened
+     once in production.
 4. At Apply, Render prompts for the `sync: false` secrets — you can leave them
    blank now and paste in **Step 4**. (`WAVERVANIR_DB_URL` and
    `WAVERVANIR_API_KEY_PEPPER` are wired/generated automatically.)
@@ -178,3 +182,34 @@ curl -s -X POST https://wavervanir-api.onrender.com/v1/cbsrm/macro-composite \
 
 Once custom domains are live, repeat #1 against `https://api.wavervanir.com/health`
 and load `https://risk.wavervanir.com/` in a browser (zero console errors).
+
+---
+
+## Triage — every authenticated route returns "internal server error"
+
+Sign-in on the Desk shows `internal server error`, and so does anything else
+that touches the database. `GET /health` still returns 200, because it is a
+liveness probe that deliberately does not touch the database.
+
+Start at readiness, which is public and names the cause:
+
+```bash
+curl -s https://app.cbsrm.wavervanir.com/health/ready | python3 -m json.tool
+# healthy  -> {"status":"ready",    "checks":{"db":"ok", ...}}
+# database -> {"status":"degraded", "checks":{"db":"error: OperationalError (...)", ...}}
+```
+
+The parenthesised reason tells you which failure it is:
+
+| Reason | Meaning | Fix |
+| --- | --- | --- |
+| `unreachable`, `connection refused`, `host unresolvable` | The instance is suspended, deleted, or the URL is wrong | Check `wavervanir-pg` in Render. A **suspended** free instance must be restored or replaced with a paid one; a deleted one is gone |
+| `too many connections` | Connection slots exhausted | Restart `wavervanir-api` to drop held connections, then look for a connection leak |
+| `authentication failed`, `database missing` | `WAVERVANIR_DB_URL` no longer matches the instance | Re-link the database in the Render env vars and redeploy |
+| `database starting up` | Instance is booting | Wait, then re-check |
+
+`wavervanir-conditions-warmer` failing its runs alongside this is a symptom,
+not a second fault — the cron writes the conditions cache to the same database.
+
+The full traceback for any 500 is in the `wavervanir-api` logs (the exception
+handler logs it before returning the sanitised body to the client).

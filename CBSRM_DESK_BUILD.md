@@ -281,7 +281,7 @@ to live (`sk_live_…`, live `whsec_…`, live Payment Link) → Manual Deploy.
 
 ## 11. Deployment (Render)
 
-- **Blueprint:** `render.yaml` — a Starter web service (`wavervanir-api`) + a free Postgres
+- **Blueprint:** `render.yaml` — a Starter web service (`wavervanir-api`) + a Starter Postgres
   (`wavervanir-pg`). `get_engine` normalizes `postgres://` → `postgresql://`. All secrets
   are `sync:false` (pasted at Apply, never in the repo).
 - **Build/start:** `pip install` the `api/` package; start with
@@ -290,7 +290,10 @@ to live (`sk_live_…`, live `whsec_…`, live Payment Link) → Manual Deploy.
   Render issues TLS automatically.
 - **Redeploy after any commit or env change:** Render → wavervanir-api →
   **Manual Deploy → Deploy latest commit** (not "Restart", which keeps the old build).
-- **Free Postgres** is deleted ~90 days after creation — upgrade to a paid instance before then.
+- **Never run `wavervanir-pg` on the free plan.** A free instance is time-limited; on expiry
+  Render suspends it and later deletes it. A suspended database refuses every connection, so
+  Desk sign-in and all authenticated routes return "internal server error" until it is
+  restored. Check the database's page in Render for its status and any deletion date.
 - **Optional cron:** `python -m wavervanir_api.tools.refresh_conditions` warms the
   conditions cache off the hot path.
 

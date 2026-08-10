@@ -75,7 +75,7 @@ Cloudflare wins on **commercial-use clarity + unlimited bandwidth at $0**.
 | Field | Value |
 | --- | --- |
 | Name | `wavervanir-staging-pg` |
-| Plan | Free (90 days) → upgrade to $7 Starter before expiry |
+| Plan | $7 Starter. A free instance is time-limited — on expiry Render suspends it (every route 500s) and later deletes it |
 | Database | `wavervanir_staging` |
 | Connect to Web Service | YES — Render pastes the internal URL into `WAVERVANIR_DB_URL` automatically |
 

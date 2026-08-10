@@ -39,10 +39,14 @@
 databases:
   - name: wavervanir-pg
     databaseName: wavervanir
-    # NOTE: Render deletes a `free` Postgres after 90 days (data + minted API
-    # keys + waitlist rows go with it). Upgrade to the $7 `starter` plan in the
-    # Render UI before expiry. See DEPLOY_QUICKSTART.md Step 1.
-    plan: free
+    # A `free` Postgres is time-limited: Render suspends it at the end of its
+    # free period and deletes it (data + minted API keys + waitlist rows) some
+    # time after that. This happened in production — the database was suspended
+    # and every authenticated route, including Desk sign-in, began returning
+    # "internal server error", because a suspended instance refuses every
+    # connection. The plan is `starter` ($7/mo) so that a Blueprint re-apply
+    # cannot put the Desk's only datastore back on an expiring tier.
+    plan: starter
 
 # Shared data-provider keys — one source of truth, linked to BOTH the web
 # service and the cron (created + linked live 2026-07-02). Values are pasted
