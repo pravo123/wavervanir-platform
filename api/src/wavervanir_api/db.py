@@ -5,6 +5,7 @@ Schema is intentionally minimal for the MVP slice.
 
 from __future__ import annotations
 
+import threading
 from datetime import datetime, timezone
 from typing import Iterator, Optional
 
@@ -172,25 +173,68 @@ class SnapshotCache(SQLModel, table=True):
 # ── engine / session ────────────────────────────────────────────────────────
 
 _engine = None
+# The URL the cached engine was built for. Kept separately because
+# ``str(engine.url)`` renders the password as ``***``: comparing it against the
+# real URL never matches for Postgres, so caching on it silently rebuilt the
+# engine (and re-ran ``create_all``) on every single call, leaking a connection
+# pool each time until the server ran out of connection slots.
+_engine_key: str | None = None
+_schema_ready = False
+_engine_lock = threading.RLock()
+
+
+def normalise_db_url(db_url: str) -> str:
+    """Some hosts hand out a legacy ``postgres://`` URL; SQLAlchemy 2.x wants
+    ``postgresql://``."""
+    if db_url.startswith("postgres://"):
+        return "postgresql://" + db_url[len("postgres://"):]
+    return db_url
+
+
+def _engine_options(db_url: str) -> dict:
+    if db_url.startswith("sqlite"):
+        return {"connect_args": {"check_same_thread": False}}
+    # Managed Postgres drops idle connections and caps how many one role may
+    # hold, so verify a pooled connection is still alive before handing it out,
+    # retire connections well inside the idle window, and keep the pool small
+    # enough that a single web process cannot exhaust the server's slots.
+    return {
+        "connect_args": {"connect_timeout": 10},
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 5,
+        "max_overflow": 5,
+        "pool_timeout": 30,
+    }
 
 
 def get_engine(db_url: str):
     """Get (and lazily build) the process-wide engine.
 
-    Re-called with a different URL (e.g. by tests) rebuilds.
+    Re-called with a different URL (e.g. by tests) disposes the previous engine
+    and rebuilds.
     """
-    # Some hosts hand out a legacy ``postgres://`` URL; SQLAlchemy 2.x requires
-    # ``postgresql://``. Normalise so the engine builds.
-    if db_url.startswith("postgres://"):
-        db_url = "postgresql://" + db_url[len("postgres://"):]
-    global _engine
-    if _engine is None or str(_engine.url) != db_url:
-        connect_args = (
-            {"check_same_thread": False} if db_url.startswith("sqlite") else {}
-        )
-        _engine = create_engine(db_url, connect_args=connect_args, echo=False)
-        SQLModel.metadata.create_all(_engine)
-    return _engine
+    global _engine, _engine_key, _schema_ready
+
+    key = normalise_db_url(db_url)
+    with _engine_lock:
+        if _engine is None or _engine_key != key:
+            previous, _engine = _engine, create_engine(
+                key, echo=False, **_engine_options(key)
+            )
+            _engine_key = key
+            _schema_ready = False
+            if previous is not None:
+                previous.dispose()
+
+        if not _schema_ready:
+            # Only mark the schema ready once create_all has actually
+            # succeeded, so a build against a temporarily unreachable database
+            # is retried rather than cached as though the tables existed.
+            SQLModel.metadata.create_all(_engine)
+            _schema_ready = True
+
+        return _engine
 
 
 def get_session(db_url: str) -> Iterator[Session]:
@@ -201,5 +245,10 @@ def get_session(db_url: str) -> Iterator[Session]:
 
 def reset_engine() -> None:
     """Test helper — drop the cached engine so the next call rebuilds."""
-    global _engine
-    _engine = None
+    global _engine, _engine_key, _schema_ready
+    with _engine_lock:
+        if _engine is not None:
+            _engine.dispose()
+        _engine = None
+        _engine_key = None
+        _schema_ready = False

@@ -33,8 +33,18 @@ def create_app() -> FastAPI:
     """
     settings = get_settings()
     configure_logging(settings)
-    # Initialise tables eagerly so the first request doesn't pay the cost.
-    get_engine(settings.db_url)
+    # Initialise tables eagerly so the first request doesn't pay the cost. A
+    # database that is unreachable right now must not abort the boot: the
+    # process would fail its health check and stay down even after the database
+    # came back. get_engine retries the schema init on the next call, and
+    # /health/ready reports the outage in the meantime.
+    try:
+        get_engine(settings.db_url)
+    except Exception as exc:  # noqa: BLE001
+        get_logger("app").error(
+            "startup_db_init_failed",
+            extra={"kv": {"error": f"{type(exc).__name__}: {exc}"}},
+        )
 
     app = FastAPI(
         title="wavervanir-api",

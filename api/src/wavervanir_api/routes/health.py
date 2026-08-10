@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -16,6 +18,36 @@ from sqlalchemy import text
 from wavervanir_api import __version__
 
 router = APIRouter()
+
+
+# ``/health/ready`` is public, so it reports a fixed vocabulary of causes rather
+# than the driver's own message, which embeds the database host, its IP and the
+# role name. Anything unrecognised degrades to the exception type alone.
+_DB_FAILURE_SIGNATURES: tuple[tuple[str, str], ...] = (
+    ("too many connections", "too many connections"),
+    ("too many clients already", "too many connections"),
+    ("remaining connection slots", "too many connections"),
+    ("password authentication failed", "authentication failed"),
+    ("role .* does not exist", "authentication failed"),
+    ("database .* does not exist", "database missing"),
+    ("system is starting up", "database starting up"),
+    ("system is shutting down", "database shutting down"),
+    ("server closed the connection unexpectedly", "connection dropped"),
+    ("ssl connection has been closed", "connection dropped"),
+    ("could not translate host name", "host unresolvable"),
+    ("connection refused", "connection refused"),
+    ("timeout expired", "connect timeout"),
+    ("could not connect to server", "unreachable"),
+)
+
+
+def _failure_reason(exc: BaseException) -> str:
+    """A safe, fixed-vocabulary description of a database failure."""
+    haystack = f"{exc} {getattr(exc, 'orig', '')}".lower()
+    for pattern, reason in _DB_FAILURE_SIGNATURES:
+        if re.search(pattern, haystack):
+            return f"error: {type(exc).__name__} ({reason})"
+    return f"error: {type(exc).__name__}"
 
 
 @router.get("/health")
@@ -40,7 +72,7 @@ def readiness() -> JSONResponse:
             conn.execute(text("SELECT 1"))
         checks["db"] = "ok"
     except Exception as exc:  # noqa: BLE001
-        checks["db"] = f"error: {type(exc).__name__}"
+        checks["db"] = _failure_reason(exc)
         ok = False
 
     # Conditions cache — informational (a cold cache is not "not ready"; the first
@@ -49,7 +81,7 @@ def readiness() -> JSONResponse:
         peek = desk_conditions.cache_peek(settings, "live")
         checks["conditions_cache"] = peek if peek else "cold"
     except Exception as exc:  # noqa: BLE001
-        checks["conditions_cache"] = f"error: {type(exc).__name__}"
+        checks["conditions_cache"] = _failure_reason(exc)
 
     # Data-feed key presence (not reachability — that stays out of the hot path).
     checks["fred_key"] = "set" if settings.fred_api_key else "unset"
