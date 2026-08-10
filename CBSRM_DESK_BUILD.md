@@ -281,19 +281,21 @@ to live (`sk_live_…`, live `whsec_…`, live Payment Link) → Manual Deploy.
 
 ## 11. Deployment (Render)
 
-- **Blueprint:** `render.yaml` — a Starter web service (`wavervanir-api`) + a Starter Postgres
-  (`wavervanir-pg`). `get_engine` normalizes `postgres://` → `postgresql://`. All secrets
-  are `sync:false` (pasted at Apply, never in the repo).
+- **Blueprint:** `render.yaml` — a Starter web service (`wavervanir-api`) + a `basic-256mb`
+  Postgres (`wavervanir-pg`). `get_engine` normalizes `postgres://` → `postgresql://`. All
+  secrets are `sync:false` (pasted at Apply, never in the repo).
 - **Build/start:** `pip install` the `api/` package; start with
   `uvicorn wavervanir_api.app:create_app --factory`.
 - **Custom domain:** `app.cbsrm.wavervanir.com` via a CNAME → `wavervanir-api.onrender.com`;
   Render issues TLS automatically.
 - **Redeploy after any commit or env change:** Render → wavervanir-api →
   **Manual Deploy → Deploy latest commit** (not "Restart", which keeps the old build).
-- **Never run `wavervanir-pg` on the free plan.** A free instance is time-limited; on expiry
-  Render suspends it and later deletes it. A suspended database refuses every connection, so
-  Desk sign-in and all authenticated routes return "internal server error" until it is
-  restored. Check the database's page in Render for its status and any deletion date.
+- **Never run `wavervanir-pg` on the free plan.** A free instance expires 30 days after
+  creation; Render then gives a 14-day grace period to upgrade before deleting it and all its
+  data. An expired database refuses every connection, so Desk sign-in and all authenticated
+  routes return "internal server error". Free instances also have no backups or point-in-time
+  recovery — those start at the paid tiers. Check the database's page in Render for its status
+  and deletion date.
 - **Optional cron:** `python -m wavervanir_api.tools.refresh_conditions` warms the
   conditions cache off the hot path.
 

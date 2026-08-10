@@ -42,13 +42,16 @@ This repo ships `render.yaml` at the root, so Render provisions the web service
    (`cbsrm-golive` or `main`).
 3. Render reads `render.yaml` and shows: web service `wavervanir-api` +
    database `wavervanir-pg`. Click **Apply**.
-   - ⚠️ The blueprint sets the Postgres `plan: starter` ($7/mo) deliberately.
-     Do not move it to `free`: a free instance is time-limited, and when it
-     expires Render suspends and then deletes it — taking minted API keys and
-     waitlist rows with it. A suspended database refuses every connection, so
-     Desk sign-in and every other authenticated route return
-     "internal server error" until it is restored. This has already happened
-     once in production.
+   - ⚠️ The blueprint sets the Postgres `plan: basic-256mb` (~$6/mo plus
+     storage) deliberately. Do not move it to `free`: a free instance expires
+     30 days after creation, and Render deletes it — along with minted API keys
+     and waitlist rows — 14 days after that unless it is upgraded. An expired
+     database refuses every connection, so Desk sign-in and every other
+     authenticated route return "internal server error". This has already
+     happened once in production.
+   - Use current instance-type names (`basic-256mb`, `pro-4gb`, …). The older
+     `starter` / `standard` / `pro` names are legacy types and Render will not
+     create a new database on one.
 4. At Apply, Render prompts for the `sync: false` secrets — you can leave them
    blank now and paste in **Step 4**. (`WAVERVANIR_DB_URL` and
    `WAVERVANIR_API_KEY_PEPPER` are wired/generated automatically.)
