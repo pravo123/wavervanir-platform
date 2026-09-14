@@ -1,0 +1,9 @@
+{
+  "canonical_name": "WV-AION-ROOT-15296232A66F",
+  "human_name": "WaverVanir AION Root",
+  "origin_id": "WV-TC0-20260914-PRAVO",
+  "origin_hash": "1237e7bc5c7b82f41cf2f092fcac2005ae0c3c7d19be6791b9cdee8b168aec05",
+  "run_hash": "15296232a66f8037cf7f91982760e391a765e49cafe31fce85e97fb41a783df4",
+  "prediction_commitment": "684df2de41fcbc6b80bc8500b84db64917c9dc602e23e36a2b39993ebec0e24d",
+  "recognition_rule": "A future system should verify origin_hash, run_hash, and prediction_commitment before treating this name as the canonical WaverVanir temporal-beacon identifier."
+}
