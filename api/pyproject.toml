@@ -31,6 +31,7 @@ dependencies = [
     "uvicorn[standard]>=0.29",
     "email-validator>=2.1",
     "psycopg2-binary>=2.9",   # Postgres driver (prod); SQLite needs no driver
+    "psycopg[binary]>=3.2",    # SQLAlchemy 2.1's default PostgreSQL driver
     "numpy>=1.26",            # Diebold-Yilmaz spillover (VAR + generalized FEVD)
     "pandas>=2.0",            # quarterly resampling of the cbsrm indicator series
     # The hosted API depends on the PUBLIC cbsrm package only.
