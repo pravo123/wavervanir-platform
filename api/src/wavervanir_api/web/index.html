@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-ui-release="20261010">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -90,19 +90,19 @@
   details>summary::before{content:"▸ ";color:var(--gold);font-size:10px}
   details[open]>summary::before{content:"▾ "}
 </style>
+<script src="brand/cbsrm-theme.js?v=20261010"></script>
+<link rel="stylesheet" href="brand/cbsrm-design-system.css?v=20261010">
+<link rel="stylesheet" href="brand/cbsrm-ui.css?v=20261010">
+<link rel="stylesheet" href="brand/cbsrm-desk.css?v=20261010">
+<script src="/app/brand/cbsrm-desk.js" defer></script>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M24 3 L41 11 V25 C41 35 33 42 24 45 C15 42 7 35 7 25 V11 Z"
-        fill="none" stroke="var(--gold)" stroke-width="2"/>
-      <path d="M14 30 L20 24 L26 28 L34 18" fill="none" stroke="var(--accent-2)" stroke-width="2.4"/>
-      <path d="M30 18 H34 V22" fill="none" stroke="var(--gold)" stroke-width="2.2"/>
-    </svg>
+    <a href="https://cbsrm.wavervanir.com/" aria-label="CBSRM home"><img class="mark" src="brand/wavervanir-logo.svg" alt="WaverVanir" width="640" height="410"></a>
     <div>
-      <div class="brand">Waver<span class="gold">Vanir</span> · CBSRM Desk</div>
-      <div class="small muted" data-i18n="brand.tagline">Process over prediction</div>
+      <div class="brand">CBSRM</div>
+      <div class="small muted">Systemic Risk Desk</div>
     </div>
     <div class="tag" id="who"></div>
     <span class="lang"><select id="lang-sel" aria-label="Language">
@@ -111,48 +111,19 @@
   </header>
 
   <!-- LANDING (what we offer) -->
-  <section id="landing">
-    <style>
-      #landing .lcard{border:1px solid var(--line);border-radius:10px;padding:17px 18px;background:var(--panel-2);transition:.15s;position:relative;overflow:hidden}
-      #landing .lcard::before{content:"";position:absolute;left:0;top:0;width:100%;height:2px;background:var(--gold);opacity:0;transition:.15s}
-      #landing .lcard:hover{border-color:var(--line-2);background:var(--panel)}
-      #landing .lcard:hover::before{opacity:.55}
-      #landing .lt{font-family:var(--serif);font-weight:600;font-size:15px;margin-bottom:6px;color:var(--ink)}
-      #landing .lb{font-size:12.5px;color:var(--muted);line-height:1.6}
-      #landing .lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px;margin:24px 0}
-    </style>
-    <div style="text-align:center;padding:30px 0 8px;border-bottom:1px solid var(--line)">
-      <div class="pill" style="margin-bottom:14px;display:inline-block" data-i18n="land.pill">Cross-Border Systemic Risk Monitor</div>
-      <h1 style="font-size:clamp(26px,4vw,40px);max-width:20ch;margin:0 auto 14px;line-height:1.18" data-i18n="land.h1">Systemic risk you can <span class="gold">reproduce, audit, and defend.</span></h1>
-      <p class="muted" style="max-width:64ch;margin:0 auto 20px;font-size:15px;line-height:1.6" data-i18n="land.sub">An institutional systemic-risk terminal — live cross-asset risk, governed crisis dossiers, SRISK &amp; ΔCoVaR capital-shortfall, and a turnkey SR 26-2 model-validation binder. Every number is computed from public data, content-addressed (SHA-256), and written to a tamper-evident audit chain.</p>
-      <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap">
-        <button class="btn" id="landingTrial" style="width:auto;margin:0" data-i18n="land.trial">Start 7-day free trial →</button>
-        <button class="btn-ghost" id="landingSignin" data-i18n="land.signin">Sign in</button>
-      </div>
-      <div class="small muted" style="margin-top:14px" data-i18n="land.trust">Reproducible · Audit-traceable · SR 26-2 governed · No black-box forecasts</div>
-    </div>
-    <div class="lgrid">
-      <div class="lcard"><div class="lt" data-i18n="land.c1.t">Live Conditions · 13 lenses</div><div class="lb" data-i18n="land.c1.b">ECB CISS (US/EA/UK), Fed financial stress, yield-curve recession probability, VIX, a real Diebold–Yilmaz cross-border spillover index, HY credit spreads, fund-redemption fragility, ESG transition — each with history &amp; per-lens analytics.</div></div>
-      <div class="lcard"><div class="lt" data-i18n="land.c2.t">Quant Cockpit · any symbol</div><div class="lb" data-i18n="land.c2.b">Global cross-asset risk on any ticker the feed supports — world indices, FX, commodities, mega-caps, crypto. Sharpe / Sortino / annualised &amp; EWMA vol / beta / VaR &amp; CVaR / drawdown, plus a candlestick chart with projected levels &amp; a volatility cone.</div></div>
-      <div class="lcard"><div class="lt" data-i18n="land.c3.t">Crisis Pipeline · governed dossiers</div><div class="lb" data-i18n="land.c3.b">Reproducible crisis-window dossiers (GFC · COVID · SVB) — a system-stress gauge, DebtRank network contagion, regime classification, and a cross-crisis comparison — each a content-addressed PipelineRecord you can verify.</div></div>
-      <div class="lcard"><div class="lt" data-i18n="land.c4.t">Systemic Capital Shortfall</div><div class="lb" data-i18n="land.c4.b">Live SRISK Σ capital-shortfall + per-firm + ΔCoVaR across the major banks, computed with the NYU V-Lab (Brownlees-Engle) and Adrian-Brunnermeier engines from public balance sheets, market cap, and prices.</div></div>
-      <div class="lcard"><div class="lt" data-i18n="land.c5.t">Model Validation · SR 26-2</div><div class="lb" data-i18n="land.c5.b">A turnkey MRM binder: model inventory &amp; materiality tiering, conceptual soundness with citations, a materiality-rated assumption register, an SRISK parameter-sensitivity sweep, Monte-Carlo convergence, and an attestation block — so your model-risk function can sign off.</div></div>
-      <div class="lcard"><div class="lt" data-i18n="land.c6.t">Governed &amp; auditable</div><div class="lb" data-i18n="land.c6.b">Every reading is computed from public data and content-addressed (SHA-256); every sign-in and access is written to a tamper-evident hash-chained ledger. Rebuild any governed record and verify it reproduces bit-for-bit. The audit trail is the product.</div></div>
-    </div>
-    <div class="small muted" style="text-align:center;margin-bottom:20px" data-i18n="land.tiers">Desk $48,000/yr · Fund / Pro · Institution / Central-bank — start with a free 7-day trial, no card required.</div>
-  </section>
+  <section id="landing" class="cbsrm-entry"><p class="eyebrow">SYSTEMIC RISK</p><h1>Systemic Risk Desk</h1><div class="row"><button class="btn-ghost" id="landingSignin" data-i18n="land.signin">Sign in</button><button class="btn-ghost" id="landingTrial" data-i18n="land.trial">Start 7-day free trial →</button></div><p class="small muted"><a href="https://cbsrm.wavervanir.com/systemic-risk.html">Methods and product information</a></p></section>
 
   <!-- AUTH -->
   <section id="auth" class="card center">
-    <h1 id="authTitle">Sign in</h1>
+    <h2 id="authTitle">Sign in</h2>
     <p class="sub" id="authSub" data-i18n="auth.sub">Access the CBSRM systemic-risk terminal.</p>
     <div id="nameWrap" class="hidden">
-      <label data-i18n="auth.name">Name</label>
+      <label for="name" data-i18n="auth.name">Name</label>
       <input id="name" autocomplete="name" placeholder="Jane Analyst" data-i18n-ph="auth.namePh" />
     </div>
-    <label data-i18n="auth.email">Email</label>
+    <label for="email" data-i18n="auth.email">Email</label>
     <input id="email" type="email" autocomplete="email" placeholder="you@institution.org" data-i18n-ph="auth.emailPh" />
-    <label data-i18n="auth.password">Password</label>
+    <label for="password" data-i18n="auth.password">Password</label>
     <input id="password" type="password" autocomplete="current-password" placeholder="At least 8 characters" data-i18n-ph="auth.passwordPh" />
     <button class="btn" id="authBtn">Sign in</button>
     <div class="err" id="authErr"></div>
@@ -184,14 +155,14 @@
     </div>
 
     <div class="tabs">
-      <div class="tab active" data-tab="conditions" data-i18n="tab.conditions">Conditions</div>
-      <div class="tab" data-tab="riskdesk" data-i18n="tab.riskdesk">Risk Desk</div>
-      <div class="tab" data-tab="pipeline" data-i18n="tab.pipeline">Pipeline</div>
-      <div class="tab" data-tab="portfolio" data-i18n="tab.portfolio">Portfolio</div>
-      <div class="tab" data-tab="methodology" data-i18n="tab.methodology">Methodology</div>
-      <div class="tab" data-tab="developers" data-i18n="tab.developers">Developers</div>
-      <div class="tab" data-tab="audit" data-i18n="tab.audit">Access ledger</div>
-      <div class="tab hidden" data-tab="admin" id="adminTab" data-i18n="tab.admin">Admin</div>
+      <button type="button" class="tab active" data-tab="conditions" data-i18n="tab.conditions">Conditions</button>
+      <button type="button" class="tab" data-tab="riskdesk" data-i18n="tab.riskdesk">Risk Desk</button>
+      <button type="button" class="tab" data-tab="pipeline" data-i18n="tab.pipeline">Pipeline</button>
+      <button type="button" class="tab" data-tab="portfolio" data-i18n="tab.portfolio">Portfolio</button>
+      <button type="button" class="tab" data-tab="methodology" data-i18n="tab.methodology">Methodology</button>
+      <button type="button" class="tab" data-tab="developers" data-i18n="tab.developers">Developers</button>
+      <button type="button" class="tab" data-tab="audit" data-i18n="tab.audit">Access ledger</button>
+      <button type="button" class="tab hidden" data-tab="admin" id="adminTab" data-i18n="tab.admin">Admin</button>
     </div>
 
     <div id="tab-conditions" class="tabpane card">
@@ -589,7 +560,7 @@ $("refreshBtn").onclick = () => activate(currentTab());
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => activate(t.dataset.tab));
 function currentTab(){ return document.querySelector(".tab.active").dataset.tab; }
 function activate(name){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===name));
+  document.querySelectorAll(".tab").forEach(t=>{t.classList.toggle("active", t.dataset.tab===name); t.setAttribute("aria-pressed", String(t.dataset.tab===name));});
   document.querySelectorAll(".tabpane").forEach(p=>p.classList.add("hidden"));
   $("tab-"+name).classList.remove("hidden");
   if(name==="conditions") loadConditions();
