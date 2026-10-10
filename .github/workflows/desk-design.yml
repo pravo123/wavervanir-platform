@@ -1,0 +1,22 @@
+name: Desk design contract
+on:
+  pull_request:
+    branches: ["cbsrm-golive"]
+permissions:
+  contents: read
+jobs:
+  desk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m pip install -e "api[dev]"
+      - run: node --check api/src/wavervanir_api/web/brand/cbsrm-desk.js
+      - run: python -m pytest -q -o addopts="" api/tests/test_users_auth.py api/tests/test_desk_portfolio.py api/tests/test_desk_pipeline.py
+      - run: npm ci && npm run build
+        working-directory: landing
