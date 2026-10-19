@@ -35,9 +35,10 @@ dependencies = [
     "numpy>=1.26",            # Diebold-Yilmaz spillover (VAR + generalized FEVD)
     "pandas>=2.0",            # quarterly resampling of the cbsrm indicator series
     # The hosted API depends on the PUBLIC cbsrm package only.
-    # In MVP we install from the pinned v0.9.0 tag on GitHub.
+    # Pinned to the exact commit the v0.9.0 tag resolved to on 2026-10-19 (a tag
+    # can move; a commit cannot). Same code, same version 0.9.0.
     # Operators developing locally can override with: pip install -e ../../cbsrm
-    "cbsrm @ git+https://github.com/pravo123/cbsrm.git@v0.9.0",
+    "cbsrm @ git+https://github.com/pravo123/cbsrm.git@4f76889273121ffffc5c2006c982f757afebea5d",
 ]
 
 [project.optional-dependencies]

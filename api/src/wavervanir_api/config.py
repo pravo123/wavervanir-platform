@@ -35,6 +35,9 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
+        # A refused setting must never echo its value (pydantic otherwise prints the
+        # model input in the ValidationError text).
+        hide_input_in_errors=True,
     )
 
     env: str = Field(default="dev", alias="WAVERVANIR_ENV")
@@ -104,6 +107,35 @@ class Settings(BaseSettings):
     def _stripe_key_fallback(self) -> "Settings":
         if not self.stripe_api_key and self.stripe_secret_key:
             self.stripe_api_key = self.stripe_secret_key
+        return self
+
+    @model_validator(mode="after")
+    def _refuse_unsafe_jwt_secret(self) -> "Settings":
+        """Fail closed on the user-login signing secret.
+
+        The CBSRM Desk signs access/refresh JWTs with ``WAVERVANIR_JWT_SECRET``.
+        A deployment that still carries the local-dev sentinel, an empty value
+        or a short value would let anyone who reads this public source mint
+        valid sessions. Refused at settings construction (so ``create_app`` and
+        every ops tool fail before serving) in every environment except the
+        explicit synthetic ``WAVERVANIR_ENV=test`` used by the test-suite. The
+        secret's value is never logged or echoed: only the reason is raised.
+        """
+        env = (self.env or "").strip().lower()
+        if env == "test":
+            return self
+        secret = self.jwt_secret or ""
+        if secret == DEFAULT_JWT_SENTINEL:
+            raise ValueError(
+                "WAVERVANIR_JWT_SECRET is the local-dev sentinel; set a strong "
+                f"random secret (>= {MIN_JWT_SECRET_LENGTH} chars) before starting "
+                f"with WAVERVANIR_ENV={env or 'dev'} (WAVERVANIR_ENV=test is exempt)"
+            )
+        if len(secret) < MIN_JWT_SECRET_LENGTH:
+            raise ValueError(
+                f"WAVERVANIR_JWT_SECRET is too short (< {MIN_JWT_SECRET_LENGTH} chars) "
+                f"for WAVERVANIR_ENV={env or 'dev'} (WAVERVANIR_ENV=test is exempt)"
+            )
         return self
 
 
