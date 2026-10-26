@@ -52,7 +52,8 @@ def test_conditions_demo_is_wellformed_and_deterministic(client):
     body = r.json()
     assert body["schema"] == "cbsrm-desk-conditions/1.0.0"
     assert body["source"] == "demo"
-    assert body["summary"] == {"total": 13, "live": 13, "stale": 0, "unavailable": 0}
+    # Synthetic availability is distinct from a live-provider observation.
+    assert body["summary"] == {"total": 13, "available": 13, "demo": 13, "live": 0, "stale": 0, "unavailable": 0}
     assert len(body["output_sha256"]) == 64
     assert all(rd["status"] == "ok" for rd in body["readings"])
     ids = {rd["id"] for rd in body["readings"]}

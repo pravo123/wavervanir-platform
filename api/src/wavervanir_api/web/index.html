@@ -250,7 +250,7 @@
         <span style="font-family:ui-monospace,Menlo,Consolas,monospace">cbsrm</span> methodology only.
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+      <div class="desk-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start">
         <div style="border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel-2)">
           <div class="small" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:8px" data-i18n="dev.install">Install &amp; run</div>
           <pre style="margin:0;background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:var(--ink)">cd api
@@ -583,16 +583,20 @@ function fmtVal(rd){
   if(rd.state) return rd.state.replaceAll("_"," ");
   return "—";
 }
+let conditionsRequest = 0;
 async function loadConditions(){
+  const request = ++conditionsRequest, source = $("condSource").value, actor = _lastUser;
   $("lensPanel").classList.add("hidden");
   $("condGrid").innerHTML=""; $("condMeta").textContent=t("js.loading");
-  const res = await api("/v1/desk/conditions?source="+$("condSource").value);
+  const res = await api("/v1/desk/conditions?source="+source);
+  if(request!==conditionsRequest || source!==$("condSource").value || actor!==_lastUser || !store.a) return;
   if(res.status===403){ $("condMeta").textContent=""; $("condGrid").innerHTML='<div class="small muted" style="padding:6px 2px">'+t("js.gate.conditions")+'</div>'; return gateLost(); }
   const j = await res.json();
-  $("condMeta").textContent = j.summary.live+"/"+j.summary.total+" live · sha256 "+j.output_sha256.slice(0,12)+"…";
+  if(request!==conditionsRequest || source!==$("condSource").value || actor!==_lastUser || !store.a) return;
+  $("condMeta").textContent = j.readings.filter(r=>r.status==="ok").length+"/"+j.summary.total+" available · "+(j.source==="demo"?"synthetic demo":"provider source")+(j.summary.stale?" · "+j.summary.stale+" last-good cached":"")+" · sha256 "+j.output_sha256.slice(0,12)+"…";
   $("condGrid").innerHTML = j.readings.map(rd => rd.status==="ok"
     ? `<div class="lens" data-lens="${rd.id}" style="cursor:pointer"><div class="k">${rd.label}</div><div class="v">${fmtVal(rd)}</div>
-        <div class="m">${rd.source}${rd.as_of?" · "+rd.as_of:""}${rd.stale?" · last good (refreshing)":""}</div></div>`
+        <div class="m">${escHtml(rd.source)}${rd.as_of?" · observed "+escHtml(rd.as_of):" · observation date unavailable"}${rd.option_expiration?" · expires "+escHtml(rd.option_expiration):""}${rd.stale?" · last-good cached":""}</div></div>`
     : `<div class="lens bad" data-lens="${rd.id}" style="cursor:pointer"><div class="k">${rd.label}</div><div class="v">unavailable</div>
         <div class="m">${rd.source}</div></div>`).join("");
   $("condGrid").querySelectorAll("[data-lens]").forEach(el => el.onclick = () => openLens(el.dataset.lens));
@@ -703,18 +707,24 @@ $("mpClose").onclick = () => $("methPanel").classList.add("hidden");
 const RG="var(--good,#3fb950)", RB="var(--bad,#f85149)", RA="var(--amber,#d29922)";
 const rstc = s => s==="risk-on"?RG:s==="risk-off"?RB:RA;
 const rpct = v => v==null?"—":((v>0?"+":"")+v+"%");
+let riskdeskRequest = 0;
 async function loadRiskdesk(){
+  const request = ++riskdeskRequest, source = $("rdSource").value, actor = _lastUser;
   $("rdPanel").classList.add("hidden");
+  $("rdMeta").textContent=t("js.loading");
+  $("rdPosture").innerHTML=""; $("rdTable").querySelector("tbody").innerHTML="";
   const grp = $("rdGroup").value || "us-benchmarks";
-  const res = await api("/v1/desk/riskdesk?group="+encodeURIComponent(grp)+"&source="+$("rdSource").value);
+  const res = await api("/v1/desk/riskdesk?group="+encodeURIComponent(grp)+"&source="+source);
+  if(request!==riskdeskRequest || source!==$("rdSource").value || grp!==$("rdGroup").value || actor!==_lastUser || !store.a) return;
   if(res.status===403){ $("rdMeta").textContent=t("js.gate.cockpit"); $("rdTable").querySelector("tbody").innerHTML=""; $("rdPosture").innerHTML=""; return gateLost(); }
   if(!res.ok){ $("rdMeta").textContent=t("js.gate.cockpitUnavail"); return; }
   const j = await res.json();
-  $("rdMeta").textContent = j.group_label+" · "+j.summary.live+"/"+j.summary.total+" live"+(j.as_of?" · "+j.as_of:"")+" · sha "+(j.output_sha256||"").slice(0,10)+"…";
+  if(request!==riskdeskRequest || source!==$("rdSource").value || grp!==$("rdGroup").value || actor!==_lastUser || !store.a) return;
+  $("rdMeta").textContent = j.group_label+" · "+j.rows.filter(r=>r.status==="ok").length+"/"+j.summary.total+" available · "+(j.source==="demo"?"synthetic demo":"provider source")+(j.as_of?" · "+j.as_of:"")+" · sha "+(j.output_sha256||"").slice(0,10)+"…";
   const p = j.posture||{};
   const col = p.label==="RISK-ON"?RG:p.label==="RISK-OFF"?RB:RA;
   $("rdPosture").innerHTML = (p.label?`<span class="pill" style="border-color:${col};color:${col}">${escHtml(p.label)}</span> `:"")
-    + `<span class="small muted">${escHtml(p.breadth_above_50dma||"")} above 50-DMA · avg VaR ${p.avg_var_95_1d_pct}% · avg DD ${p.avg_drawdown_pct}%</span>`;
+    + `<span class="small muted">${escHtml(p.breadth_above_50dma||"")} above 50-DMA · avg VaR ${p.avg_var_95_1d_pct==null?"unavailable":p.avg_var_95_1d_pct+"%"} · avg DD ${p.avg_drawdown_pct==null?"unavailable":p.avg_drawdown_pct+"%"}</span>`;
   $("rdTable").querySelector("tbody").innerHTML = (j.rows||[]).map(i => i.status==="ok"
     ? `<tr data-sym="${escHtml(i.symbol)}" style="cursor:pointer"><td><b>${escHtml(i.ticker)}</b> <span class="small muted">${escHtml(i.name)}</span></td>
          <td style="text-align:right">${i.spot}</td>
@@ -774,7 +784,9 @@ async function openSymbol(sym){
   sym = (sym||"").trim().toUpperCase(); if(!sym) return;
   const pn = $("rdPanel"); pn.classList.remove("hidden");
   pn.innerHTML = '<div class="small muted">Analyzing '+escHtml(sym)+'…</div>';
-  const res = await api("/v1/desk/riskdesk/symbol/"+encodeURIComponent(sym));
+  const source = $("rdSource").value;
+  const res = await api("/v1/desk/riskdesk/symbol/"+encodeURIComponent(sym)+"?source="+encodeURIComponent(source));
+  if(source !== $("rdSource").value) return;
   if(res.status===403) return gateLost();
   if(res.status===404){ pn.innerHTML = '<div class="small muted">“'+escHtml(sym)+'” isn’t on the feed. Try an index (^GSPC), FX (EURUSD), commodity (GC), crypto (BTCUSD), or a US stock/ETF.</div>'; return; }
   if(!res.ok){ pn.innerHTML = '<div class="small muted">Unavailable.</div>'; return; }
@@ -787,13 +799,14 @@ async function openSymbol(sym){
     <div class="row"><strong style="font-size:15px">${escHtml(j.symbol)}</strong> <span class="small muted">${escHtml(j.kind)} · as-of ${escHtml(j.as_of)}</span>
       <span class="pill" style="border-color:${rstc(j.state)};color:${rstc(j.state)};margin-left:8px">${escHtml(j.state)}</span>
       <div class="spacer"></div><span class="small muted">px ${j.price}</span></div>
+    <p class="small muted">${escHtml(j.disclaimer||"")}</p>
     ${chartHtml}
     <div class="row" style="gap:26px;margin-top:8px">
       <div><div class="small muted">1W</div><div style="color:${(h.ret_1w_pct||0)>=0?RG:RB}">${rpct(h.ret_1w_pct)}</div></div>
       <div><div class="small muted">1M</div><div style="color:${(h.ret_1m_pct||0)>=0?RG:RB}">${rpct(h.ret_1m_pct)}</div></div>
       <div><div class="small muted">3M</div><div style="color:${(h.ret_3m_pct||0)>=0?RG:RB}">${rpct(h.ret_3m_pct)}</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px">
+    <div class="desk-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:14px">
       <div><div class="small muted" style="margin-bottom:3px">Risk Desk</div>
         <table><tbody>
           <tr><td>Sharpe</td><td style="text-align:right">${rd.sharpe}</td><td>Sortino</td><td style="text-align:right">${rd.sortino}</td></tr>
@@ -804,7 +817,7 @@ async function openSymbol(sym){
       <div><div class="small muted" style="margin-bottom:3px">Value-at-Risk / CVaR · historical</div>
         <table><thead><tr><th>Horizon</th><th style="text-align:right">VaR</th><th style="text-align:right">CVaR</th></tr></thead><tbody>${varRows}</tbody></table></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px">
+    <div class="desk-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:14px">
       <div><div class="small muted" style="margin-bottom:3px">Macro Stress · beta-driven</div>
         <table><thead><tr><th>Scenario</th><th style="text-align:right">Move</th><th style="text-align:right">Implied</th></tr></thead><tbody>${stRows}</tbody></table></div>
       <div><div class="small muted" style="margin-bottom:3px">Quant Read</div>
@@ -933,7 +946,7 @@ async function buildPipeline(){
          ${plCard("System Stress",(j.phase_score!=null?Number(j.phase_score).toFixed(2):"—"),phaseUp)}
          ${plCard("DebtRank",(dr.value!=null?Number(dr.value).toFixed(2):"—"),"n_banks "+(dr.n_banks||"—")+(dr.converged?" · converged ✓":""))}
          ${plCard("Macro Regime",phaseUp||"—",(d.risk_posture||"").toUpperCase())}</div>
-       <div style="display:grid;grid-template-columns:0.8fr 1.05fr 0.8fr;gap:16px;margin-top:16px;align-items:start">
+       <div class="desk-grid" style="display:grid;grid-template-columns:minmax(0,0.8fr) minmax(0,1.05fr) minmax(0,0.8fr);gap:16px;margin-top:16px;align-items:start">
          <div><div class="small muted" style="margin-bottom:2px">System stress</div>${plGauge(j.phase_score, phaseUp)}</div>
          <div><div class="small muted" style="margin-bottom:4px">System-stress channels (z)</div>
            ${plZBar("Volatility",sc.volatility)}${plZBar("Credit",sc.credit)}${plZBar("Systemic",sc.systemic)}${plZBar("Liquidity",sc.liquidity)}
@@ -962,7 +975,7 @@ async function loadSystemic(){
        <div class="row"><strong>Live systemic capital shortfall</strong><div class="spacer"></div>
          <span class="pill" style="border-color:${B};color:${B}">Σ SRISK +${sk.total_bn}$bn</span></div>
        <div class="small muted" style="margin-top:2px">${sk.n_shortfall}/${sk.n_firms} in shortfall · net ${sk.net_bn}$bn · LRMES ${j.lrmes} · k ${p.k} · horizon ${p.horizon_days}d · crisis ${p.crisis_threshold} · ${p.n_paths} paths · seed ${p.seed}</div>
-       <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:18px;margin-top:14px">
+       <div class="desk-grid" style="display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;margin-top:14px">
          <div><div class="small muted" style="margin-bottom:4px">SRISK — firm capital shortfall ($bn) · Brownlees-Engle · NYU V-Lab</div>${bars}</div>
          <div><div class="small muted" style="margin-bottom:4px">ΔCoVaR — tail dependence · Adrian-Brunnermeier</div>
            <table><thead><tr><th>Firm</th><th style="text-align:right">ΔCoVaR</th></tr></thead><tbody>${cov}</tbody></table></div></div>
@@ -1001,7 +1014,7 @@ async function loadValidation(){
       <table style="margin-top:6px"><thead><tr><th>Model</th><th>Assumption</th><th>Mat.</th><th>Bias</th></tr></thead><tbody>${asum}</tbody></table></details>
     <details open style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Sensitivity & stress · SRISK Σ over k × crisis threshold</summary><div style="margin-top:6px">${sens}</div></details>
     <details open style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Numerical convergence · LRMES Monte-Carlo</summary>
-      <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1.2fr;gap:14px">${mcTab}
+      <div class="desk-grid" style="margin-top:6px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px">${mcTab}
         <div class="small">Seed stability @2000: ${(bs.lrmes||[]).join(", ")}<br>mean ${bs.mean} · std ${bs.std} (${bs.rel_pct}%)
           <div style="color:${mcCol};margin-top:5px;line-height:1.45">${escHtml(mc.verdict||"")}</div></div></div></details>
     <details style="margin-top:10px"><summary class="small muted" style="cursor:pointer">Dependency graph · change → re-review dependents</summary>
