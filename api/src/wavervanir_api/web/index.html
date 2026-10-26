@@ -113,6 +113,12 @@
   <!-- LANDING (what we offer) -->
   <section id="landing" class="cbsrm-entry"><p class="eyebrow">SYSTEMIC RISK</p><h1>Systemic Risk Desk</h1><div class="row"><button class="btn-ghost" id="landingSignin" data-i18n="land.signin">Sign in</button><button class="btn-ghost" id="landingTrial" data-i18n="land.trial">Start 7-day free trial →</button></div><p class="small muted"><a href="https://cbsrm.wavervanir.com/systemic-risk.html">Methods and product information</a></p></section>
 
+  <section id="connectionStatus" class="card center hidden" aria-live="polite">
+    <h2>Connection interrupted</h2>
+    <p class="sub">We couldn’t verify your account. Your session has been kept. Retry the connection to continue.</p>
+    <div class="row"><button class="btn" id="connectionRetry">Retry connection</button><button class="btn-ghost" id="connectionSignout">Sign out</button></div>
+  </section>
+
   <!-- AUTH -->
   <section id="auth" class="card center">
     <h2 id="authTitle">Sign in</h2>
@@ -456,24 +462,42 @@ function applyLang(l){
   }
 }
 
+async function authFetch(path, options){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try { return await fetch(path, {...options, signal:controller.signal}); }
+  finally { clearTimeout(timer); }
+}
 async function api(path, {method="GET", body, auth=true} = {}){
   const headers = {"Content-Type":"application/json"};
   if(auth && store.a) headers["Authorization"] = "Bearer " + store.a;
-  let res = await fetch(path, {method, headers, body: body?JSON.stringify(body):undefined});
+  const send = path.startsWith("/auth/") ? authFetch : fetch;
+  let res = await send(path, {method, headers, body: body?JSON.stringify(body):undefined});
   if(res.status === 401 && auth && store.r){
     const ok = await tryRefresh();
     if(ok){ headers["Authorization"]="Bearer "+store.a;
-      res = await fetch(path, {method, headers, body: body?JSON.stringify(body):undefined}); }
+      res = await send(path, {method, headers, body: body?JSON.stringify(body):undefined}); }
   }
   return res;
 }
+let refreshFlight = null;
 async function tryRefresh(){
-  try{
-    const res = await fetch("/auth/refresh",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({refresh_token: store.r})});
-    if(!res.ok) return false;
-    const j = await res.json(); store.set(j.access_token, j.refresh_token); return true;
-  }catch(e){ return false; }
+  const access = store.a, refresh = store.r;
+  if(!refresh) return false;
+  if(refreshFlight && refreshFlight.access===access && refreshFlight.refresh===refresh) return refreshFlight.promise;
+  const flight = {access, refresh, promise:null};
+  flight.promise = (async () => {
+    const res = await authFetch("/auth/refresh",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({refresh_token:refresh})});
+    if(store.a!==access || store.r!==refresh) return false;
+    if(res.status===401 || res.status===403) return false;
+    if(!res.ok) throw new Error("Account service unavailable");
+    const j = await res.json();
+    if(store.a!==access || store.r!==refresh) return false;
+    if(typeof j.access_token!=="string" || !j.access_token || typeof j.refresh_token!=="string" || !j.refresh_token) throw new Error("Invalid account response");
+    store.set(j.access_token,j.refresh_token); return true;
+  })().finally(() => { if(refreshFlight===flight) refreshFlight=null; });
+  refreshFlight=flight;
+  return flight.promise;
 }
 
 // ---- auth UI ----
@@ -1140,15 +1164,35 @@ $("pfRun").onclick = async () => {
 })();
 
 // ---- boot ----
-(async function boot(){
-  applyStatic();                       // localise the static chrome for the detected language
+let bootRequest = 0;
+function showConnectionRetry(){
+  show("connection"); $("connectionStatus").classList.remove("hidden");
+}
+async function boot(){
+  const request = ++bootRequest;
+  $("connectionStatus").classList.add("hidden");
   if(store.a){
-    const res = await api("/auth/me");
-    if(res.ok){ enterTerminal(await res.json()); return; }
+    try{
+      const res = await api("/auth/me");
+      if(request!==bootRequest || !store.a) return;
+      if(res.ok){
+        const user = await res.json();
+        if(request===bootRequest && store.a) enterTerminal(user);
+        return;
+      }
+      if(res.status!==401 && res.status!==403){ showConnectionRetry(); return; }
+    }catch(e){
+      if(request===bootRequest && store.a) showConnectionRetry();
+      return;
+    }
     store.clear();
   }
   setMode("login"); show("auth");
-})();
+}
+$("connectionRetry").onclick = () => boot();
+$("connectionSignout").onclick = () => { bootRequest++; store.clear(); $("connectionStatus").classList.add("hidden"); clearPanes(); setMode("login"); show("auth"); };
+applyStatic();
+void boot();
 </script>
 </body>
 </html>
