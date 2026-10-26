@@ -32,6 +32,7 @@ _STRONG_PEPPER = "x" * 64
 def _use_strong_pepper(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WAVERVANIR_API_KEY_PEPPER", _STRONG_PEPPER)
     monkeypatch.setenv("WAVERVANIR_ENV", "staging")
+    monkeypatch.setenv("WAVERVANIR_JWT_SECRET", "synthetic-test-only-signing-secret-0123456789")  # the JWT guard (2026-10-19) refuses the sentinel outside env=test
     get_settings.cache_clear()
 
 
@@ -109,6 +110,7 @@ def test_prod_env_refused(capsys, monkeypatch, isolated_settings):
     # Strong pepper, but ENV=prod should still refuse.
     monkeypatch.setenv("WAVERVANIR_API_KEY_PEPPER", "a" * 64)
     monkeypatch.setenv("WAVERVANIR_ENV", "prod")
+    monkeypatch.setenv("WAVERVANIR_JWT_SECRET", "synthetic-test-only-signing-secret-0123456789")  # the JWT guard (2026-10-19) refuses the sentinel outside env=test
     get_settings.cache_clear()
     rc = bootstrap_main(["--plan", "researcher"])
     err = capsys.readouterr().err

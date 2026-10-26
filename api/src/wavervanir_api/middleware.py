@@ -20,7 +20,7 @@ import time
 from typing import Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from wavervanir_api.logging_config import get_logger
 
@@ -42,6 +42,32 @@ _CSP = (
 
 # Paths whose per-request access log is muted (health probes hit constantly).
 _QUIET_PATHS = frozenset({"/health"})
+
+# Canonical-host alias. The plural host is a typo-alias people type; the Desk is
+# served on the singular host only. A request whose ``Host`` header is EXACTLY
+# the alias (lower-cased, no port games) is answered before any router or auth
+# code runs: GET/HEAD become a 301 to the constant canonical origin with the
+# path and query preserved; every other method is refused with 405 so that no
+# login, refresh or API write is ever processed on the alias. ``X-Forwarded-*``
+# headers are deliberately ignored (never trusted for routing). The canonical
+# host itself and every unrelated host are untouched. DNS/TLS for the alias are
+# not this code's concern; until they exist no request reaches it.
+CANONICAL_DESK_ORIGIN = "https://app.cbsrm.wavervanir.com"
+ALIAS_HOSTS = frozenset({"apps.cbsrm.wavervanir.com"})
+_ALIAS_METHODS = frozenset({"GET", "HEAD"})
+
+
+def alias_redirect(request: Request) -> Response | None:
+    """The response for an alias-host request, or ``None`` when the host is not an alias."""
+    host = (request.headers.get("host") or "").lower()  # exact: no trimming, no port stripping
+    if host not in ALIAS_HOSTS:
+        return None
+    if request.method.upper() not in _ALIAS_METHODS:
+        return Response(status_code=405, headers={"Allow": "GET, HEAD"})
+    target = CANONICAL_DESK_ORIGIN + request.url.path
+    if request.url.query:
+        target += "?" + request.url.query
+    return RedirectResponse(url=target, status_code=301)
 
 
 def security_headers(settings: Any) -> dict[str, str]:
@@ -90,7 +116,11 @@ def install_security_and_logging(app: FastAPI, settings: Any) -> None:
     @app.middleware("http")
     async def _headers_and_logging(request: Request, call_next):
         start = time.perf_counter()
-        response = await call_next(request)  # handled errors already became responses
+        aliased = alias_redirect(request)
+        if aliased is not None:
+            response = aliased  # never reaches a router: no auth, no body, no write
+        else:
+            response = await call_next(request)  # handled errors already became responses
         for key, value in headers.items():
             response.headers.setdefault(key, value)
         if request.url.path not in _QUIET_PATHS:
