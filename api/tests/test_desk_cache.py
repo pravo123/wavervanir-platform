@@ -88,7 +88,9 @@ def test_build_cached_feeds_prior_snapshot_as_fallback(isolated_settings, monkey
     s = get_settings()
     desk_conditions._cache_set(
         s, "conditions:live", "live",
-        json.dumps({"readings": [{"id": "ECB-CISS-US", "status": "ok", "value": 0.011}]}),
+        json.dumps({"cache_contract": desk_conditions.CACHE_CONTRACT,
+                    "readings": [{"id": "ECB-CISS-US", "status": "ok", "value": 0.011,
+                                  "as_of": "2026-06-25"}]}),
     )
     captured: dict = {}
 
@@ -98,4 +100,5 @@ def test_build_cached_feeds_prior_snapshot_as_fallback(isolated_settings, monkey
 
     monkeypatch.setattr(desk_conditions, "build", fake_build)
     desk_conditions.build_cached(source="live", settings=s, force=True)
-    assert captured["prev_readings"] == [{"id": "ECB-CISS-US", "status": "ok", "value": 0.011}]
+    assert captured["prev_readings"] == [{"id": "ECB-CISS-US", "status": "ok", "value": 0.011,
+                                         "as_of": "2026-06-25"}]

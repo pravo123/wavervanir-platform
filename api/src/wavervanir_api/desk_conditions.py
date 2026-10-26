@@ -223,7 +223,13 @@ def _apply_last_good(readings: list[dict], prev_readings: Optional[list[dict]]) 
     """
     if not prev_readings:
         return readings
-    prev_ok = {r.get("id"): r for r in prev_readings if r.get("status") == "ok"}
+    def dated(r):
+        try:
+            return _dt.date.fromisoformat(str(r.get("as_of", ""))[:10]) <= _dt.date.today()
+        except ValueError:
+            return False
+
+    prev_ok = {r.get("id"): r for r in prev_readings if r.get("status") == "ok" and dated(r)}
     out: list[dict] = []
     for r in readings:
         if r.get("status") != "ok" and r.get("id") in prev_ok:
@@ -285,6 +291,7 @@ def build(*, source: str = "live", generated_at_utc: Optional[str] = None, setti
 # ── cache (serve the slow multi-upstream live build instantly) ──────────────
 
 CONDITIONS_CACHE_TTL_S = 3600  # 1 hour
+CACHE_CONTRACT = 2  # Earlier payloads mislabelled demo counts and option expirations.
 
 
 def _aware(dt):
@@ -331,7 +338,10 @@ def cache_peek(settings, source: str = "live") -> Optional[dict]:
     gen_at, payload_json = got
     age = int((_dt.datetime.now(_dt.timezone.utc) - _aware(gen_at)).total_seconds())
     try:
-        live = json.loads(payload_json).get("summary", {}).get("live")
+        payload = json.loads(payload_json)
+        if payload.get("cache_contract") != CACHE_CONTRACT:
+            return None
+        live = payload.get("summary", {}).get("live")
     except (json.JSONDecodeError, AttributeError):
         live = None
     return {"age_s": age, "live": live, "generated_at": _aware(gen_at).isoformat()}
@@ -345,6 +355,12 @@ def build_cached(*, source: str, settings, max_age_s: int = CONDITIONS_CACHE_TTL
     # Load any existing snapshot regardless of force/TTL: it both serves a fresh
     # cache hit AND seeds the last-good fallback when we recompute.
     got = _cache_get(settings, key)
+    if got:
+        try:
+            if json.loads(got[1]).get("cache_contract") != CACHE_CONTRACT:
+                got = None
+        except (json.JSONDecodeError, AttributeError):
+            got = None
     if got and not force:
         gen_at, payload_json = got
         age = (_dt.datetime.now(_dt.timezone.utc) - _aware(gen_at)).total_seconds()
@@ -360,6 +376,7 @@ def build_cached(*, source: str, settings, max_age_s: int = CONDITIONS_CACHE_TTL
             prev_readings = None
     snap = build(source=source, settings=settings, generated_at_utc=generated_at_utc,
                  prev_readings=prev_readings)
+    snap["cache_contract"] = CACHE_CONTRACT
     _cache_set(settings, key, source, json.dumps(snap))
     snap["cache"] = {"hit": False, "age_s": 0}
     return snap

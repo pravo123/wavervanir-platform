@@ -3,6 +3,7 @@ handling, Stripe-key fallback, and structured logging."""
 
 from __future__ import annotations
 
+import json
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -90,7 +91,8 @@ def test_readiness_reports_warm_cache(client):
     settings = get_settings()
     desk_conditions._cache_set(
         settings, "conditions:live", "live",
-        '{"summary": {"live": 11, "total": 13}}',
+        json.dumps({"cache_contract": desk_conditions.CACHE_CONTRACT,
+                    "summary": {"live": 11, "total": 13}}),
     )
     r = client.get("/health/ready")
     cache = r.json()["checks"]["conditions_cache"]
