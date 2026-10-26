@@ -35,6 +35,6 @@ jobs:
         run: python -c "from wavervanir_api.app import create_app; create_app()"
       - run: node --check api/src/wavervanir_api/web/brand/cbsrm-desk.js
       - run: node api/tests/test_demo_source_switch.cjs
-      - run: python -m pytest -q -o addopts="" api/tests/test_users_auth.py api/tests/test_desk_portfolio.py api/tests/test_desk_pipeline.py api/tests/test_demo_source_integration.py
+      - run: python -m pytest -q -o addopts="" api/tests/test_users_auth.py api/tests/test_desk_portfolio.py api/tests/test_desk_pipeline.py api/tests/test_demo_source_integration.py api/tests/test_conditions_cache_contract.py api/tests/test_desk_cache.py api/tests/test_hardening.py
       - run: npm ci && npm run build
         working-directory: landing
