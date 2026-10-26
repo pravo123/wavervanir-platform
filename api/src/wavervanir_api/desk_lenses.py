@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import math
 import threading
+from datetime import date
 from typing import Any, Callable, Optional
 
 from wavervanir_api.audit import sha256_of_obj  # noqa: F401  (kept for parity)
@@ -196,30 +197,65 @@ def _dy_series_live(settings) -> list[dict]:
 
 # ── options put/call vega skew (best-effort) ─────────────────────────────────
 
+def _observation_date(record: dict) -> str | None:
+    """Read an observed date only; expiration and fetch time are not observations."""
+    for key in ("date", "as_of", "observation_date", "timestamp"):
+        value = record.get(key)
+        if isinstance(value, str):
+            try:
+                day = date.fromisoformat(value[:10])
+            except ValueError:
+                continue
+            if day <= date.today():
+                return day.isoformat()
+    return None
+
+
 def _options_reading_live(settings) -> dict:
     import httpx
 
+    with httpx.Client(timeout=httpx.Timeout(12.0)) as cli:
+        return _options_reading_from_client(settings, cli)
+
+
+def _options_reading_from_client(settings, cli) -> dict:
     from wavervanir_api.providers.financialdata import get_json
 
-    cli = httpx.Client(timeout=httpx.Timeout(12.0))
     und = "AAPL"
     sp = get_json(settings, "stock-prices", params={"identifier": und, "offset": 0}, client=cli)
     spot = float(sp[0]["close"]) if isinstance(sp, list) and sp else None
     chain = get_json(settings, "option-chain", params={"identifier": und, "offset": 0}, client=cli)
-    if spot is None or not isinstance(chain, list) or not chain:
+    if spot is None or not math.isfinite(spot) or spot <= 0 or not isinstance(chain, list) or not chain:
         return _unavailable("OPTIONS-TAIL", "chain/spot unavailable")
-    exps = sorted({c.get("expiration_date") for c in chain if c.get("expiration_date")})
+    chain = [c for c in chain if isinstance(c, dict)]
+    exps = []
+    for c in chain:
+        try:
+            expiry = date.fromisoformat(str(c.get("expiration_date", "")))
+        except (ValueError, AttributeError):
+            continue
+        if expiry >= date.today():
+            exps.append(expiry.isoformat())
+    exps = sorted(set(exps))
+    if not exps:
+        return _unavailable("OPTIONS-TAIL", "no valid unexpired option expiration")
     rows = [c for c in chain if c.get("expiration_date") == exps[0]]
     puts = sorted([c for c in rows if c.get("put_or_call") == "Put" and (c.get("strike_price") or 0) < spot],
                   key=lambda c: -c["strike_price"])[:2]
     calls = sorted([c for c in rows if c.get("put_or_call") == "Call" and (c.get("strike_price") or 0) > spot],
                    key=lambda c: c["strike_price"])[:2]
 
+    observation_dates = [_observation_date(sp[0])]
+
     def vega(c):
         g = get_json(settings, "option-greeks", params={"identifier": c["contract_name"]}, client=cli)
         rec = g[0] if isinstance(g, list) and g else (g if isinstance(g, dict) else None)
         try:
-            return abs(float(rec.get("vega"))) if rec and rec.get("vega") is not None else None
+            value = abs(float(rec.get("vega"))) if rec and rec.get("vega") is not None else None
+            if value is not None and math.isfinite(value) and value > 0:
+                observation_dates.append(_observation_date(rec))
+                return value
+            return None
         except (TypeError, ValueError):
             return None
 
@@ -228,7 +264,11 @@ def _options_reading_live(settings) -> dict:
     if not pv or not cv or sum(cv) == 0:
         return _unavailable("OPTIONS-TAIL", "greeks unavailable")
     skew = round((sum(pv) / len(pv)) / (sum(cv) / len(cv)), 3)
-    return _meta_reading("OPTIONS-TAIL", status="ok", as_of=str(exps[0]), value=skew,
+    dated = all(observation_dates)
+    return _meta_reading("OPTIONS-TAIL", status="ok",
+                         as_of=min(observation_dates) if dated else None,
+                         observation_date_status="complete" if dated else "unavailable",
+                         option_expiration=exps[0], value=skew,
                          state=_band_state("OPTIONS-TAIL", skew),
                          interpretation=f"{und} near-the-money, exp {exps[0]}")
 

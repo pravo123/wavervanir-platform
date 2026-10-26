@@ -131,6 +131,7 @@ def risk_desk(
 @router.get("/desk/riskdesk/symbol/{symbol}")
 def risk_desk_symbol(
     symbol: str,
+    source: str = Query("live", pattern="^(live|demo)$"),
     ctx: UserContext = Depends(require_desk),
     settings: Settings = Depends(get_settings),
 ) -> dict:
@@ -140,7 +141,7 @@ def risk_desk_symbol(
     EWMA vol/beta/max-drawdown), a horizon VaR/CVaR table, beta-driven macro
     stress scenarios, a quant read, and reproducible SHA-256 provenance.
     """
-    profile = desk_riskdesk.risk_profile(settings, symbol, generated_at_utc=_utc_stamp())
+    profile = desk_riskdesk.risk_profile(settings, symbol, source=source, generated_at_utc=_utc_stamp())
     if profile is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

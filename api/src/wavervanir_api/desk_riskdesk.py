@@ -209,17 +209,44 @@ def _posture(rows: list, equity: bool) -> dict:
 
 # ── deterministic demo (offline / tests) ────────────────────────────────────
 
+def _demo_bars(symbol: str) -> list[dict] | None:
+    """Deterministic weekday fixtures, not exchange-calendar or observed market data."""
+    from datetime import date, timedelta
+
+    requested = symbol.strip().upper()
+    matches = [(tk, sym, kind) for g in GROUPS for tk, sym, _name, kind in g["members"]
+               if requested in {tk.upper(), sym.upper()}]
+    if requested == "^VIX":
+        canonical = requested
+    elif matches:
+        canonical = matches[0][1]
+    else:
+        return None
+    seed = sum(ord(ch) for ch in canonical)
+    days, day = [], date(2026, 6, 26)
+    while len(days) < 320:
+        if day.weekday() < 5:
+            days.append(day.isoformat())
+        day -= timedelta(days=1)
+    rows = []
+    for i, day in enumerate(reversed(days)):
+        close = 80 + seed % 400 + 0.08 * i + 3 * math.sin(i * 0.19 + seed) + math.cos(i * 0.43)
+        opening = close + 0.35 * math.sin(i * 0.31)
+        rows.append({"date": day, "o": round(opening, 6), "h": round(max(opening, close) + 0.8, 6),
+                     "l": round(min(opening, close) - 0.8, 6), "c": round(close, 6)})
+    return list(reversed(rows))
+
+
 def _demo_metrics(sym: str) -> dict:
-    h = sum(ord(ch) for ch in sym)
-    dd = round(-(h % 15), 2)
-    vs50 = round((h % 9) - 4, 2)
-    return {
-        "spot": round(50 + (h % 950) + (h % 7) / 10, 2), "chg_1d": round(((h % 7) - 3) * 0.3, 2),
-        "ret_21d": round(((h % 11) - 5) * 0.8, 2), "vol_20d": round(10 + (h % 40), 1),
-        "var_95_1d": round(1 + (h % 5) + (h % 3) / 10, 2), "beta": round(0.5 + (h % 12) / 10, 2),
-        "drawdown": dd, "vs_sma50": vs50, "vs_sma200": round((h % 17) - 8, 2),
-        "state": _state(dd, vs50), "as_of": "2026-06-26",
-    }
+    bars = _demo_bars(sym)
+    if bars is None:
+        raise ValueError("No synthetic fixture for this symbol")
+    pairs = [(b["date"], b["c"]) for b in bars]
+    market = [(b["date"], b["c"]) for b in _demo_bars(_MARKET)]
+    metrics = _metrics(pairs)
+    beta = _beta(pairs, market)
+    metrics["beta"] = round(beta, 2) if beta is not None else None
+    return {**metrics, "as_of": pairs[0][0]}
 
 
 # ── public API ──────────────────────────────────────────────────────────────
@@ -259,7 +286,10 @@ def build(*, group: str = DEFAULT_GROUP, source: str = "live", settings=None,
         "schema": SCHEMA, "source": source, "group": g["id"], "group_label": g["label"],
         "group_equity": g["equity"], "as_of": as_of, "generated_at_utc": generated_at_utc,
         "available_groups": available_groups(), "rows": rows, "posture": posture,
-        "summary": {"total": len(rows), "live": len(ok), "unavailable": len(rows) - len(ok)},
+        "summary": {"total": len(rows), "available": len(ok),
+                    "demo": len(ok) if source == "demo" else 0,
+                    "live": len(ok) if source == "live" else 0,
+                    "unavailable": len(rows) - len(ok)},
         "methodology": METHODOLOGY,
         "disclaimer": (METHODOLOGY["disclaimer"] if source != "demo"
                        else "DEMONSTRATION readings — synthetic, not live market data."),
@@ -483,19 +513,28 @@ def _build_chart(bars: list, var_table: list) -> dict:
     }
 
 
-def risk_profile(settings, symbol: str, *, generated_at_utc: Optional[str] = None) -> Optional[dict]:
+def risk_profile(settings, symbol: str, *, source: str = "live", generated_at_utc: Optional[str] = None) -> Optional[dict]:
     """Institutional single-symbol cockpit read: returns, risk-desk stats, VaR/CVaR
     table, macro-stress scenarios, a candlestick chart with projected levels, a quant
     read, and reproducible provenance."""
     sym = (symbol or "").strip().upper()
     if not sym:
         return None
-    bars, kind = _fetch_bars_any(settings, sym)
+    if source not in {"live", "demo"}:
+        raise ValueError("Unsupported source")
+    if source == "demo":
+        bars, kind = _demo_bars(sym), "synthetic"
+        market_pairs = [(b["date"], b["c"]) for b in _demo_bars(_MARKET)]
+        vix_pairs = [(b["date"], b["c"]) for b in _demo_bars("^VIX")]
+    else:
+        bars, kind = _fetch_bars_any(settings, sym)
+        market_pairs = _safe_fetch(settings, _MARKET, "index")
+        vix_pairs = _safe_fetch(settings, "^VIX", "index")
     if bars is None or len(bars) < 51:
         return None
     pairs = [(b["date"], b["c"]) for b in bars]
-    market_pairs = pairs if sym == _MARKET else _safe_fetch(settings, _MARKET, "index")
-    vix_pairs = _safe_fetch(settings, "^VIX", "index")
+    if sym == _MARKET:
+        market_pairs = pairs
     base = _metrics(pairs)  # spot, chg_1d, ret_21d, vol_20d, var_95_1d, drawdown, vs_sma50/200, state
     st = _ret_stats(pairs, market_pairs, vix_pairs)
     c = [px for _, px in pairs]
@@ -509,9 +548,10 @@ def risk_profile(settings, symbol: str, *, generated_at_utc: Optional[str] = Non
     var5_95 = next((r["var_pct"] for r in st["var_table"]
                     if r["horizon"] == "5D" and r["confidence"] == "95%"), None)
     profile = {
-        "schema": PROFILE_SCHEMA, "symbol": sym, "kind": kind, "as_of": pairs[0][0],
+        "schema": PROFILE_SCHEMA, "source": source, "demo": source == "demo",
+        "symbol": sym, "kind": kind, "as_of": pairs[0][0],
         "generated_at_utc": generated_at_utc, "state": base["state"],
-        "price": st["spot"], "chg_1d_pct": base["chg_1d"], "horizons": horizons,
+        "price": base["spot"] if source == "demo" else st["spot"], "chg_1d_pct": base["chg_1d"], "horizons": horizons,
         "risk_desk": {
             "sharpe": st["sharpe"], "sortino": st["sortino"], "ann_vol_pct": st["ann_vol_pct"],
             "ewma_vol_pct": st["ewma_vol_pct"], "beta_sp": st["beta_sp"],
@@ -521,10 +561,11 @@ def risk_profile(settings, symbol: str, *, generated_at_utc: Optional[str] = Non
         "trend": {"vs_sma50_pct": base.get("vs_sma50"), "vs_sma200_pct": base.get("vs_sma200")},
         "macro_stress": stress,
         "provenance": {"data_points": st["points"], "as_of": pairs[0][0],
-                       "source": "financialdata.net", "endpoint_kind": kind,
+                       "source": "synthetic weekday fixture" if source == "demo" else "financialdata.net", "endpoint_kind": kind,
                        "vix_factor": vb is not None, "market_factor": st.get("beta_sp") is not None},
         "methodology": METHODOLOGY,
-        "disclaimer": METHODOLOGY["disclaimer"],
+        "disclaimer": ("DEMONSTRATION — synthetic weekday fixtures, not observed market data."
+                       if source == "demo" else METHODOLOGY["disclaimer"]),
     }
     profile["chart"] = _build_chart(bars, st["var_table"])
     profile["quant_read"] = _quant_read(sym, base["state"], st, var5_95)
